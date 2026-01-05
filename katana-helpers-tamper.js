@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.2
-// @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters + confetti on success.
+// @version      2.6.4
+// @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
 // @grant        none
-// @require      https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js
 // ==/UserScript==
 
 (() => {
@@ -58,10 +57,10 @@
   const SAVED_CLICKS_ULTRA_EXTRA = 2;    // auto Done + return/back
 
   // Ultra timing knobs
-  // NOTE: Hard-settle time (your measurement: grid/cells can take ~3s; 6s is “safe”)
-  const ULTRA_MIN_DELAY_AFTER_NAV_MS = 6000;
-
-  const ULTRA_WAIT_GRID_MS = 20000;           // time allowed for grid/rows to appear after settle
+  const ULTRA_MAX_WAIT_FOR_READY_MS = 6000;
+  const ULTRA_READY_POLL_MS = 140;
+  const ULTRA_READY_COUNTDOWN_THRESHOLD_MS = 1500;
+  const ULTRA_WAIT_GRID_MS = 20000;           // time allowed for grid/rows to appear
   const ULTRA_SCAN_TIMEOUT_MS = 30000;        // time allowed for full scroll+scan
 
   // ----------------------------
@@ -207,22 +206,6 @@
   }
 
   // ----------------------------
-  // Confetti (safe)
-  // ----------------------------
-  function fireConfetti() {
-    const c = window.confetti;
-    if (typeof c !== "function") return;
-
-    c({
-      particleCount: 60,
-      spread: 75,
-      startVelocity: 32,
-      ticks: 120,
-      origin: { y: 0.75 },
-    });
-  }
-
-  // ----------------------------
   // Toast (minimal, bottom-center)
   // ----------------------------
   const TOAST_ID = "kh-toast";
@@ -243,6 +226,34 @@
       el.style.opacity = "0";
       setTimeout(() => { if (el) el.style.display = "none"; }, 250);
     }, ms);
+  }
+
+  const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+  function startSpinnerToast(getMessage, intervalMs = 140) {
+    let i = 0;
+    const tick = () => {
+      const frame = SPINNER_FRAMES[i++ % SPINNER_FRAMES.length];
+      showToast(`${frame} ${getMessage()}`, 1600);
+    };
+    tick();
+    const t = setInterval(tick, intervalMs);
+    return () => clearInterval(t);
+  }
+
+  function startCountdownToast(maxWaitMs, thresholdMs, onMessage) {
+    const start = Date.now();
+    let shown = false;
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      if (!shown && elapsed < thresholdMs) return;
+      shown = true;
+      const remainingMs = Math.max(0, maxWaitMs - elapsed);
+      onMessage(remainingMs);
+    };
+    tick();
+    const t = setInterval(tick, 250);
+    return () => clearInterval(t);
   }
 
   // ----------------------------
@@ -719,46 +730,48 @@
     return out;
   }
 
-  async function waitForIngredientsGridHydrated(timeoutMs = ULTRA_WAIT_GRID_MS) {
-    // Flat settle time (your proven fix)
-    await sleep(ULTRA_MIN_DELAY_AFTER_NAV_MS);
+  async function waitForIngredientsGridHydrated({
+    maxWaitMs = ULTRA_MAX_WAIT_FOR_READY_MS,
+    pollMs = ULTRA_READY_POLL_MS,
+  } = {}) {
+    const start = Date.now();
+    let lastError = null;
 
-    // Body + viewport + center cols must exist
-    await waitForCondition(() => {
+    const isReady = () => {
       const body = findIngredientsBodyRoot();
       if (!body) return false;
       const vp = findIngredientsViewport(body);
       const center = findCenterColsViewport(body);
-      return !!vp && !!center;
-    }, timeoutMs, 120);
+      if (!vp || !center) return false;
 
-    // Must have at least one availability gridcell in the center viewport
-    await waitForCondition(() => {
-      const body = findIngredientsBodyRoot();
-      if (!body) return false;
-      return getAvailabilityCells(body).length > 0;
-    }, timeoutMs, 120);
-
-    // Must have at least one “real” value (in stock / not available) to avoid early-bail
-    await waitForCondition(() => {
-      const body = findIngredientsBodyRoot();
-      if (!body) return false;
       const cells = getAvailabilityCells(body);
+      if (!cells.length) return false;
+
       for (const c of cells) {
         const s = classifyAvailabilityCell(c);
         if (s === "in_stock" || s === "not_available") return true;
       }
       return false;
-    }, timeoutMs, 140);
+    };
 
-    // micro settle
-    await sleep(200);
+    while (Date.now() - start < maxWaitMs) {
+      try {
+        if (isReady()) return { ready: true, elapsedMs: Date.now() - start };
+      } catch (err) {
+        lastError = err;
+      }
+      await sleep(pollMs);
+    }
+
+    if (lastError) log("Grid readiness check error:", lastError);
+    return { ready: false, elapsedMs: Date.now() - start };
   }
 
   async function collectAllAvailabilityWithScrolling({
     timeoutMs = ULTRA_SCAN_TIMEOUT_MS,
     passLimit = 3,
     stepFactor = 0.85,
+    onUpdate,
   } = {}) {
     const start = Date.now();
 
@@ -770,7 +783,7 @@
 
     const originalScrollTop = viewport.scrollTop;
 
-    const runOnePass = async () => {
+    const runOnePass = async (passIndex) => {
       const statusMap = new Map();
 
       viewport.scrollTop = 0;
@@ -780,6 +793,19 @@
       const step = Math.max(220, Math.floor(viewport.clientHeight * stepFactor));
 
       let guard = 0;
+      const emitUpdate = () => {
+        const counts = { in_stock: 0, not_available: 0, loading: 0, unknown: 0 };
+        for (const s of statusMap.values()) counts[s] += 1;
+        const diag = {
+          rowsSeen: statusMap.size,
+          ...counts,
+          maxScroll: Math.round(viewport.scrollHeight - viewport.clientHeight),
+          scrollTop: Math.round(viewport.scrollTop),
+          pass: passIndex,
+        };
+        onUpdate?.(diag);
+      };
+
       while (guard++ < 900) {
         await sleep(60);
 
@@ -788,6 +814,7 @@
           const prev = statusMap.get(it.key);
           statusMap.set(it.key, mergeStatus(prev, it.status));
         }
+        emitUpdate();
 
         if (maxScroll <= 2) break;
 
@@ -819,6 +846,8 @@
         rowsSeen: statusMap.size,
         ...counts,
         maxScroll: Math.round(viewport.scrollHeight - viewport.clientHeight),
+        scrollTop: Math.round(viewport.scrollTop),
+        pass: passIndex,
       };
 
       const ready = diag.rowsSeen > 0 && diag.loading === 0 && diag.unknown === 0;
@@ -826,15 +855,29 @@
     };
 
     let lastDiag = null;
+    let stableCount = 0;
 
-    for (let pass = 1; pass <= passLimit; pass++) {
-      if (Date.now() - start > timeoutMs) break;
+    let pass = 0;
+    while (Date.now() - start <= timeoutMs) {
+      pass += 1;
+      if (pass > passLimit && lastDiag?.loading === 0 && lastDiag?.unknown === 0) break;
 
-      const { ready, diag } = await runOnePass();
+      const prevDiag = lastDiag;
+      const { ready, diag } = await runOnePass(pass);
       diag.pass = pass;
       lastDiag = diag;
 
-      if (ready) {
+      if (ready && prevDiag) {
+        const stableNow =
+          prevDiag.rowsSeen === diag.rowsSeen &&
+          diag.loading === 0 &&
+          diag.unknown === 0;
+        stableCount = stableNow ? stableCount + 1 : 0;
+      } else {
+        stableCount = 0;
+      }
+
+      if (ready && stableCount >= 1) {
         viewport.scrollTop = originalScrollTop;
 
         if (diag.not_available > 0) return { ok: true, allInStock: false, diag };
@@ -867,21 +910,53 @@
       return { ok: true, ultraDone: true };
     }
 
-    showToast(`Ultra EX: settling (${Math.round(ULTRA_MIN_DELAY_AFTER_NAV_MS/1000)}s)…`, ULTRA_MIN_DELAY_AFTER_NAV_MS + 1200);
-    try {
-      await waitForIngredientsGridHydrated(ULTRA_WAIT_GRID_MS);
-    } catch {
-      showToast("Ultra EX stopped: ingredients grid didn’t load in time. Finish manually.", 5600);
-      return { ok: false, ultraDone: false };
+    const stopCountdown = startCountdownToast(
+      ULTRA_MAX_WAIT_FOR_READY_MS,
+      ULTRA_READY_COUNTDOWN_THRESHOLD_MS,
+      (remainingMs) => {
+        const secs = (remainingMs / 1000).toFixed(1);
+        showToast(`Ultra EX: waiting for grid… ${secs}s`, 1300);
+      }
+    );
+
+    const readiness = await waitForIngredientsGridHydrated({
+      maxWaitMs: ULTRA_MAX_WAIT_FOR_READY_MS,
+      pollMs: ULTRA_READY_POLL_MS,
+    });
+    stopCountdown();
+
+    if (!readiness.ready) {
+      showToast("Ultra EX: grid still loading — scanning anyway…", 2400);
     }
 
-    showToast("Ultra EX: checking availability (scrolling)…", 9000);
+    let latestDiag = {
+      rowsSeen: 0,
+      in_stock: 0,
+      not_available: 0,
+      loading: 0,
+      unknown: 0,
+      pass: 1,
+      maxScroll: 0,
+      scrollTop: 0,
+    };
+
+    const scanPassLimit = 3;
+    const stopSpinner = startSpinnerToast(() => {
+      const d = latestDiag;
+      const passText = d.pass ? `pass ${d.pass}` : "pass 1";
+      const scrollProbe = DEBUG ? ` | scroll ${d.scrollTop}/${d.maxScroll}` : "";
+      return `Ultra EX: scanning… ${passText} | rows ${d.rowsSeen} (in ${d.in_stock}, not ${d.not_available}, load ${d.loading}, unk ${d.unknown})${scrollProbe}`;
+    });
 
     const scanRes = await collectAllAvailabilityWithScrolling({
       timeoutMs: ULTRA_SCAN_TIMEOUT_MS,
-      passLimit: 3,
+      passLimit: scanPassLimit,
       stepFactor: 0.85,
+      onUpdate: (diag) => {
+        latestDiag = { ...latestDiag, ...diag };
+      },
     });
+    stopSpinner();
 
     if (!scanRes.ok) {
       const d = scanRes.diag || {};
@@ -902,7 +977,11 @@
       return { ok: false, ultraDone: false };
     }
 
-    showToast("Ultra EX: all in stock → completing MO…", 2200);
+    const d = scanRes.diag || {};
+    showToast(
+      `Ultra EX OK — rows: ${d.rowsSeen ?? "?"} (in ${d.in_stock ?? "?"}, not ${d.not_available ?? "?"}, unk ${d.unknown ?? "?"}). Marking Done…`,
+      2600
+    );
 
     const doneOk = await runMoSetDoneFlow();
     if (!doneOk) {
@@ -910,6 +989,7 @@
       return { ok: false, ultraDone: false };
     }
 
+    showToast("Ultra EX: marked Done. Returning to sales order…", 2200);
     history.back();
 
     setTimeout(() => {
@@ -985,7 +1065,6 @@
             const ok = await runMoSetDoneFlow();
             if (ok) {
               incrementCounters(1);
-              fireConfetti();
             }
             return;
           }
@@ -994,7 +1073,6 @@
             const ok = await runSoPackAllFlow();
             if (ok) {
               incrementCounters(1);
-              fireConfetti();
             }
             return;
           }
@@ -1106,13 +1184,11 @@
               return;
             }
 
-            fireConfetti();
             incrementCounters(SAVED_CLICKS_EX_NORMAL);
 
             const ultraRes = await runUltraAfterMoOpen(exRes.originUrl);
             if (ultraRes.ok && ultraRes.ultraDone) {
               incrementCounters(SAVED_CLICKS_ULTRA_EXTRA);
-              fireConfetti();
             }
 
             setExButtonUltraVisual(btn, false);
@@ -1137,7 +1213,6 @@
               const exRes = await runSoExX1Flow(rowEl);
               if (exRes.ok) {
                 incrementCounters(SAVED_CLICKS_EX_NORMAL);
-                fireConfetti();
               }
             } finally {
               setRunning(btn, false);
