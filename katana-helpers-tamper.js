@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.5
+// @version      2.6.8
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -25,6 +25,9 @@
   const BTN_CREATE_MO_ID = "kh-create-mo-btn";
   const BTN_STATUS_HELPER_ID = "kh-status-helper-btn"; // MO Done helper OR SO Pack all
   const BTN_SO_EX_CLASS = "kh-so-ex-btn";
+  const BTN_ETSY_ORDER_ID = "kh-etsy-order-btn";
+  const ETSY_ORDER_CELL_ID = "kh-etsy-order-cell";
+  const ETSY_ORDER_URL = "https://www.etsy.com/your/orders/sold";
 
   const SEL_CREATE_BTN = 'button[data-testid="globalAddButton"]';
   const SEL_MO_ITEM = 'a[data-testid="globalAddManufacturing"]';
@@ -349,6 +352,37 @@
       }
       .${BTN_SO_EX_CLASS}:hover { border-color: rgba(0,0,0,0.45) !important; }
       .${BTN_SO_EX_CLASS}:active { transform: translateY(0.5px) !important; }
+
+      /* Etsy button next to Sales order # */
+      .kh-etsy-order-cell {
+        display: flex !important;
+        align-items: flex-end !important;
+        padding-left: 12px !important;
+        margin-bottom: -16px !important;
+      }
+      #${BTN_ETSY_ORDER_ID} {
+        background: #f26a2e !important;
+        color: #fff !important;
+        border: 1px solid rgba(0,0,0,0.15) !important;
+        border-radius: 8px !important;
+        padding: 8px 14px !important;
+        font: inherit !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+        box-shadow: 0 1px 0 rgba(0,0,0,0.1) !important;
+        transition: background 120ms ease, box-shadow 120ms ease, transform 80ms ease !important;
+      }
+      #${BTN_ETSY_ORDER_ID}:hover {
+        background: #e85e22 !important;
+      }
+      #${BTN_ETSY_ORDER_ID}:active,
+      #${BTN_ETSY_ORDER_ID}[data-kh-clicked="1"] {
+        background: #d4571f !important;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.25) !important;
+        transform: translateY(1px) !important;
+      }
 
       /* HUD */
       #${HUD_ID} {
@@ -1228,6 +1262,86 @@
     });
   }
 
+  function findMuiGridAncestor(el, type) {
+    let node = el;
+    const prefix = `MuiGrid-${type}`;
+    while (node && node !== document.body) {
+      if (node.classList && [...node.classList].some(cls => cls.startsWith(prefix))) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  function getEtsyOrderIdFromHeader() {
+    const header = document.querySelector('[data-testid="headerNameSALESORDER"]');
+    const text = header?.textContent || "";
+    const match = text.match(/ETSY[\s\-_]+(\d+)/i);
+    return match?.[1] || "";
+  }
+
+  // ----------------------------
+  // Injection: Etsy order button next to Sales order #
+  // ----------------------------
+  function ensureEtsyOrderButton() {
+    ensureStyles();
+
+    const soOrderField = document.querySelector(".soOrderNo");
+    if (!soOrderField) return;
+
+    const gridContainer = findMuiGridAncestor(soOrderField, "container");
+    if (!gridContainer) return;
+
+    const soOrderItem = findMuiGridAncestor(soOrderField, "item");
+    if (!soOrderItem) return;
+
+    const orderInput = soOrderField.querySelector('input[name="orderNo"]');
+    const orderValue = orderInput?.value || "";
+    const isEtsyOrder = orderValue.toLowerCase().includes("etsy");
+
+    const existingBtn = document.getElementById(BTN_ETSY_ORDER_ID);
+    const existingCell = document.getElementById(ETSY_ORDER_CELL_ID);
+    if (!isEtsyOrder) {
+      existingBtn?.remove();
+      if (existingCell && !existingCell.querySelector("button")) {
+        existingCell.remove();
+      }
+      return;
+    }
+
+    if (existingBtn) return;
+
+    let cell = existingCell;
+    if (!cell) {
+      cell = document.createElement("div");
+      const baseItemClasses = [...soOrderItem.classList]
+        .filter(cls => cls.startsWith("MuiGrid-root") || cls.startsWith("MuiGrid-item"))
+        .join(" ");
+      cell.id = ETSY_ORDER_CELL_ID;
+      cell.className = `${baseItemClasses} kh-etsy-order-cell`.trim();
+      gridContainer.insertBefore(cell, soOrderItem.nextSibling);
+    }
+
+    const btn = document.createElement("button");
+    btn.id = BTN_ETSY_ORDER_ID;
+    btn.type = "button";
+    btn.textContent = "Etsy";
+    btn.title = "Goes to Etsy order page (opens in a new window)";
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      btn.setAttribute("data-kh-clicked", "1");
+      setTimeout(() => btn.removeAttribute("data-kh-clicked"), 220);
+      const orderId = getEtsyOrderIdFromHeader();
+      const url = orderId ? `${ETSY_ORDER_URL}?order_id=${orderId}` : ETSY_ORDER_URL;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }, { capture: true });
+
+    cell.appendChild(btn);
+  }
+
   // ----------------------------
   // SPA resilience
   // ----------------------------
@@ -1244,6 +1358,7 @@
     ensureCreateMoButton();
     ensureEntityStatusHelper();
     ensureSoExButtons();
+    ensureEtsyOrderButton();
   }
 
   function scheduleEnsure() {
