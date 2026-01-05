@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.8
+// @version      2.6.9
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -11,19 +11,16 @@
 (() => {
   "use strict";
 
-  // ----------------------------
-  // Config
-  // ----------------------------
   const DEBUG = false;
 
   const KEY_TOTAL = "kh_clicks_total";
-  const KEY_BY_DATE = "kh_clicks_by_date"; // JSON map: { "YYYY-MM-DD": n }
+  const KEY_BY_DATE = "kh_clicks_by_date";
 
   const STYLE_ID = "kh-style";
   const HUD_ID = "kh-hud";
 
   const BTN_CREATE_MO_ID = "kh-create-mo-btn";
-  const BTN_STATUS_HELPER_ID = "kh-status-helper-btn"; // MO Done helper OR SO Pack all
+  const BTN_STATUS_HELPER_ID = "kh-status-helper-btn";
   const BTN_SO_EX_CLASS = "kh-so-ex-btn";
   const BTN_ETSY_ORDER_ID = "kh-etsy-order-btn";
   const ETSY_ORDER_CELL_ID = "kh-etsy-order-cell";
@@ -32,43 +29,32 @@
   const SEL_CREATE_BTN = 'button[data-testid="globalAddButton"]';
   const SEL_MO_ITEM = 'a[data-testid="globalAddManufacturing"]';
 
-  // Entity status dropdown button (used in multiple places/pages)
   const SEL_ENTITY_STATUS_BTN = 'button[data-testid="menuButton-entityStatus"]';
 
-  // Manufacturing Order status menu items
   const SEL_MO_STATUS_DONE_ITEM = 'li[data-testid="menuListItem-entityStatus-done"]';
 
-  // Sales Order status menu items
   const SEL_SO_STATUS_PACK_ALL_ITEM = 'li[data-testid="menuListItem-entityStatus-packAll"]';
 
-  // "Not enough stock" dialog (Sales Order packing)
   const SEL_DIALOG_TITLE = 'div[role="dialog"] h2';
   const SEL_DIALOG_CLOSE_BTN = 'div[role="dialog"] button#closeButton';
 
-  // Sales Order row actions + Make in batch
   const SEL_SO_ROW_ACTIONS_BTN = 'button[data-testid="soRowActionsMenu-button"]';
   const SEL_SO_MENU_MAKE_IN_BATCH = 'li[data-testid="soRowActionsMenu-item-makeInBatch"]';
   const SEL_BATCH_QTY_INPUT = 'input[data-testid="singleMOLayoutQuantityInput"]';
   const SEL_CREATE_AND_OPEN = 'button[data-testid="createAndOpenOrderButton"]';
 
-  // Ultra EX availability checks (on Manufacturing Order page)
   const INGREDIENTS_GRID_ID = "#ingredients-grid";
   const DOUBLE_CLICK_WINDOW_MS = 250;
 
-  // Click-saved accounting
-  const SAVED_CLICKS_EX_NORMAL = 4;      // your calibrated value
-  const SAVED_CLICKS_ULTRA_EXTRA = 2;    // auto Done + return/back
+  const SAVED_CLICKS_EX_NORMAL = 4;
+  const SAVED_CLICKS_ULTRA_EXTRA = 2;
 
-  // Ultra timing knobs
   const ULTRA_MAX_WAIT_FOR_READY_MS = 6000;
   const ULTRA_READY_POLL_MS = 140;
   const ULTRA_READY_COUNTDOWN_THRESHOLD_MS = 1500;
-  const ULTRA_WAIT_GRID_MS = 20000;           // time allowed for grid/rows to appear
-  const ULTRA_SCAN_TIMEOUT_MS = 30000;        // time allowed for full scroll+scan
+  const ULTRA_WAIT_GRID_MS = 20000;
+  const ULTRA_SCAN_TIMEOUT_MS = 30000;
 
-  // ----------------------------
-  // Utils
-  // ----------------------------
   const log = (...args) => DEBUG && console.log("[KatanaHelpers]", ...args);
 
   function sleep(ms) {
@@ -92,6 +78,26 @@
 
   const HAS_STORAGE = storageAvailable();
   let mem = { total: 0, byDate: {} };
+
+  function ensureElement(id, tag = "div", parent = document.body) {
+    let el = document.getElementById(id);
+    if (el) return { el, created: false };
+    el = document.createElement(tag);
+    el.id = id;
+    parent.appendChild(el);
+    return { el, created: true };
+  }
+
+  function createButton({ id, className, text, title, onClick }) {
+    const btn = document.createElement("button");
+    if (id) btn.id = id;
+    if (className) btn.className = className;
+    btn.type = "button";
+    if (text) btn.textContent = text;
+    if (title) btn.title = title;
+    if (onClick) btn.addEventListener("click", onClick, { capture: true });
+    return btn;
+  }
 
   function getPacificYMD() {
     const parts = new Intl.DateTimeFormat("en-CA", {
@@ -179,9 +185,7 @@
         try {
           const val = checkFn();
           if (val) return resolve(val);
-        } catch {
-          // ignore
-        }
+        } catch {}
         if (Date.now() - start >= timeoutMs) return reject(new Error("Timeout waiting for condition"));
         setTimeout(tick, intervalMs);
       };
@@ -207,18 +211,9 @@
   function normText(s) {
     return (s || "").replace(/\s+/g, " ").trim().toLowerCase();
   }
-
-  // ----------------------------
-  // Toast (minimal, bottom-center)
-  // ----------------------------
   const TOAST_ID = "kh-toast";
   function showToast(msg, ms = 2800) {
-    let el = document.getElementById(TOAST_ID);
-    if (!el) {
-      el = document.createElement("div");
-      el.id = TOAST_ID;
-      document.body.appendChild(el);
-    }
+    const { el } = ensureElement(TOAST_ID);
     el.textContent = msg;
     el.style.display = "block";
     el.style.opacity = "1";
@@ -259,18 +254,12 @@
     return () => clearInterval(t);
   }
 
-  // ----------------------------
-  // Styles
-  // ----------------------------
   function ensureStyles() {
     if (document.getElementById(STYLE_ID)) return;
 
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-      /* Katana Helpers (kh-) */
-
-      /* Create MO: black bg / white text */
       #${BTN_CREATE_MO_ID} {
         background: #000 !important;
         color: #fff !important;
@@ -286,7 +275,6 @@
       #${BTN_CREATE_MO_ID}:hover { border-color: rgba(255,255,255,0.45) !important; }
       #${BTN_CREATE_MO_ID}:active { transform: translateY(0.5px) !important; }
 
-      /* Shared helper button next to entity status dropdown (MO Done helper OR SO Pack all) */
       #${BTN_STATUS_HELPER_ID} {
         border-radius: 6px !important;
         padding: 6px 12px !important;
@@ -303,13 +291,11 @@
         cursor: progress !important;
       }
 
-      /* MO helper (only "Done") */
       #${BTN_STATUS_HELPER_ID}.kh-mo-done {
         background: rgba(46, 204, 113, 0.95) !important;
         color: #fff !important;
       }
 
-      /* SO helper (Pack all) */
       #${BTN_STATUS_HELPER_ID}.kh-so-packall {
         background: rgba(230, 213, 153, 0.95) !important;
         color: #000 !important;
@@ -318,9 +304,8 @@
       #${BTN_STATUS_HELPER_ID}:hover { border-color: rgba(0,0,0,0.45) !important; }
       #${BTN_STATUS_HELPER_ID}:active { transform: translateY(0.5px) !important; }
 
-      /* SO row EX button (compact square) */
       .${BTN_SO_EX_CLASS} {
-        background: rgba(153, 184, 230, 0.95) !important; /* light blue */
+        background: rgba(153, 184, 230, 0.95) !important;
         color: #000 !important;
         font-weight: 900 !important;
         border: 1px solid rgba(0,0,0,0.25) !important;
@@ -346,14 +331,13 @@
         cursor: progress !important;
       }
       .${BTN_SO_EX_CLASS}.kh-ultra {
-        background: rgba(230, 60, 60, 0.95) !important; /* red for Ultra */
+        background: rgba(230, 60, 60, 0.95) !important;
         color: #fff !important;
         border-color: rgba(255,255,255,0.25) !important;
       }
       .${BTN_SO_EX_CLASS}:hover { border-color: rgba(0,0,0,0.45) !important; }
       .${BTN_SO_EX_CLASS}:active { transform: translateY(0.5px) !important; }
 
-      /* Etsy button next to Sales order # */
       .kh-etsy-order-cell {
         display: flex !important;
         align-items: flex-end !important;
@@ -384,7 +368,6 @@
         transform: translateY(1px) !important;
       }
 
-      /* HUD */
       #${HUD_ID} {
         position: fixed;
         left: 50%;
@@ -420,11 +403,10 @@
         background: rgba(255,255,255,0.18);
       }
 
-      /* Toast */
       #${TOAST_ID} {
         position: fixed;
         left: 50%;
-        bottom: 48px; /* above HUD */
+        bottom: 48px;
         transform: translateX(-50%);
         z-index: 10000;
         max-width: min(720px, 92vw);
@@ -444,16 +426,10 @@
     document.documentElement.appendChild(style);
   }
 
-  // ----------------------------
-  // HUD
-  // ----------------------------
   function ensureHud() {
     ensureStyles();
-
-    let hud = document.getElementById(HUD_ID);
-    if (!hud) {
-      hud = document.createElement("div");
-      hud.id = HUD_ID;
+    const { el: hud, created } = ensureElement(HUD_ID);
+    if (created) {
 
       hud.innerHTML = `
         <span class="kh-hud-text">
@@ -461,8 +437,6 @@
         </span>
         <button id="kh-reset" type="button" title="Reset total + today">Reset</button>
       `;
-
-      document.body.appendChild(hud);
 
       hud.querySelector("#kh-reset")?.addEventListener("click", (e) => {
         e.preventDefault();
@@ -492,29 +466,44 @@
     if (todayEl) todayEl.textContent = String(today);
   }
 
-  // ----------------------------
-  // Context detection for entity status helper
-  // ----------------------------
   function getEntityStatusContext() {
     const statusBtn = document.querySelector(SEL_ENTITY_STATUS_BTN);
     if (!statusBtn) return { mode: "none", state: "none", text: "" };
 
     const t = normText(statusBtn.textContent);
 
-    // Sales Order
     if (t.includes("not shipped")) return { mode: "sales", state: "notShipped", text: t };
     if (t.includes("packed")) return { mode: "sales", state: "packed", text: t };
 
-    // Manufacturing Order
     if (t.includes("not started")) return { mode: "manufacturing", state: "notStarted", text: t };
     if (t.includes("done")) return { mode: "manufacturing", state: "done", text: t };
 
     return { mode: "unknown", state: "unknown", text: t };
   }
 
-  // ----------------------------
-  // Sales Order Pack all flow
-  // ----------------------------
+  const STATUS_HELPER_CONFIG = {
+    manufacturing: {
+      notStarted: { text: "Done", className: "kh-mo-done", title: "Mark MO as Done" },
+      done: { hidden: true },
+    },
+    sales: {
+      notShipped: {
+        text: "Pack all",
+        className: "kh-so-packall",
+        title: "Pack all (won't count if 'Not enough stock' appears)",
+      },
+      packed: { hidden: true },
+    },
+  };
+
+  async function openMenuAndSelect({ menuButton, itemSelector, timeoutMs = 1500 }) {
+    if (menuButton) dispatchRealClick(menuButton);
+    const item = await waitForSelector(itemSelector, timeoutMs).catch(() => null);
+    if (!item) return null;
+    dispatchRealClick(item);
+    return item;
+  }
+
   function isNotEnoughStockDialogOpen() {
     const titleEl = document.querySelector(SEL_DIALOG_TITLE);
     if (!titleEl) return false;
@@ -524,16 +513,12 @@
   async function runSoPackAllFlow() {
     const statusBtn = document.querySelector(SEL_ENTITY_STATUS_BTN);
     if (!statusBtn) return false;
-
-    dispatchRealClick(statusBtn);
-
-    let packAllItem;
-    try {
-      packAllItem = await waitForSelector(SEL_SO_STATUS_PACK_ALL_ITEM, 1500);
-    } catch {
-      return false;
-    }
-    dispatchRealClick(packAllItem);
+    const packAllItem = await openMenuAndSelect({
+      menuButton: statusBtn,
+      itemSelector: SEL_SO_STATUS_PACK_ALL_ITEM,
+      timeoutMs: 1500,
+    });
+    if (!packAllItem) return false;
 
     try {
       const outcome = await waitForCondition(() => {
@@ -546,7 +531,7 @@
       if (outcome === "error") {
         const closeBtn = document.querySelector(SEL_DIALOG_CLOSE_BTN);
         if (closeBtn) dispatchRealClick(closeBtn);
-        return false; // do NOT count
+        return false;
       }
       return outcome === "packed";
     } catch {
@@ -558,9 +543,6 @@
     }
   }
 
-  // ----------------------------
-  // Create MO flow (header button)
-  // ----------------------------
   async function runCreateMoFlow() {
     if (window.location.pathname.startsWith("/add-manufacturingorder")) return;
 
@@ -568,33 +550,28 @@
     if (!createBtn) return;
 
     let moItem = document.querySelector(SEL_MO_ITEM);
-    if (!moItem) {
-      dispatchRealClick(createBtn);
-      try {
-        moItem = await waitForSelector(SEL_MO_ITEM, 1500);
-      } catch {
-        return;
-      }
+    if (moItem) {
+      dispatchRealClick(moItem);
+      return;
     }
-    dispatchRealClick(moItem);
+
+    moItem = await openMenuAndSelect({
+      menuButton: createBtn,
+      itemSelector: SEL_MO_ITEM,
+      timeoutMs: 1500,
+    });
+    if (!moItem) return;
   }
 
-  // ----------------------------
-  // Manufacturing Order: click Done helper
-  // ----------------------------
   async function runMoSetDoneFlow() {
     const statusBtn = document.querySelector(SEL_ENTITY_STATUS_BTN);
     if (!statusBtn) return false;
-
-    dispatchRealClick(statusBtn);
-
-    let doneItem;
-    try {
-      doneItem = await waitForSelector(SEL_MO_STATUS_DONE_ITEM, 1500);
-    } catch {
-      return false;
-    }
-    dispatchRealClick(doneItem);
+    const doneItem = await openMenuAndSelect({
+      menuButton: statusBtn,
+      itemSelector: SEL_MO_STATUS_DONE_ITEM,
+      timeoutMs: 1500,
+    });
+    if (!doneItem) return false;
 
     try {
       await waitForCondition(() => {
@@ -607,9 +584,6 @@
     }
   }
 
-  // ----------------------------
-  // SO Row EX flow (Make in batch -> qty 1 -> Create and open order)
-  // ----------------------------
   function getClosestAgRow(el) {
     return el?.closest?.(".ag-row") || null;
   }
@@ -618,15 +592,12 @@
     const actionsBtn = rowEl.querySelector(SEL_SO_ROW_ACTIONS_BTN);
     if (!actionsBtn) return { ok: false };
 
-    dispatchRealClick(actionsBtn);
-
-    let makeInBatch;
-    try {
-      makeInBatch = await waitForSelector(SEL_SO_MENU_MAKE_IN_BATCH, 2000);
-    } catch {
-      return { ok: false };
-    }
-    dispatchRealClick(makeInBatch);
+    const makeInBatch = await openMenuAndSelect({
+      menuButton: actionsBtn,
+      itemSelector: SEL_SO_MENU_MAKE_IN_BATCH,
+      timeoutMs: 2000,
+    });
+    if (!makeInBatch) return { ok: false };
 
     let qtyInput;
     try {
@@ -671,16 +642,7 @@
     }
   }
 
-  // ----------------------------
-  // Ultra EX: availability scan (AG Grid-safe)
-  // Key fixes:
-  //  - hard 6000ms settle
-  //  - ONLY scan ingredient body rows: #ingredients-grid .ag-body .ag-center-cols-viewport
-  //  - ONLY count real grid cells: [role="gridcell"][col-id="availability3"]
-  // ----------------------------
-
   function findIngredientsBodyRoot() {
-    // This matches your “all relevant rows/cells are contained here”
     return document.querySelector(`${INGREDIENTS_GRID_ID} .ag-body.ag-layout-auto-height`) ||
            document.querySelector(`${INGREDIENTS_GRID_ID} .ag-body`) ||
            null;
@@ -697,9 +659,6 @@
   }
 
   function getAvailabilityCells(bodyRoot) {
-    // IMPORTANT:
-    // - role="gridcell" excludes header cells (role="columnheader")
-    // - scoping to center-cols-viewport excludes pinned totals + other non-body areas
     const center = findCenterColsViewport(bodyRoot);
     if (!center) return [];
     return Array.from(center.querySelectorAll('[role="gridcell"][col-id="availability3"]'));
@@ -725,12 +684,10 @@
     if (!t) return "loading";
     if (t.includes("not available")) return "not_available";
     if (t.includes("in stock")) return "in_stock";
-    // If Katana uses other text sometimes, we keep it "unknown" (treated as not-ready)
     return "unknown";
   }
 
   function mergeStatus(prev, next) {
-    // Worst-case priority: not_available > unknown > loading > in_stock
     const rank = { in_stock: 0, loading: 1, unknown: 2, not_available: 3 };
     if (!prev) return next;
     return rank[next] > rank[prev] ? next : prev;
@@ -745,11 +702,10 @@
       not_available: 0,
       loading: 0,
       unknown: 0,
-      items: [], // { key, status }
+      items: [],
     };
 
     for (const cell of cells) {
-      // Only count cells that actually belong to a data row
       const row = cell.closest(".ag-row");
       if (!row) continue;
 
@@ -862,7 +818,6 @@
         viewport.scrollTop = next;
       }
 
-      // Final bottom scan
       if (viewport.scrollHeight - viewport.clientHeight > 2) {
         viewport.scrollTop = viewport.scrollHeight;
         await sleep(140);
@@ -1036,9 +991,6 @@
     return { ok: true, ultraDone: true };
   }
 
-  // ----------------------------
-  // Injection: Create MO button (header)
-  // ----------------------------
   function ensureCreateMoButton() {
     ensureStyles();
 
@@ -1050,26 +1002,20 @@
     const parent = createBtn.parentElement;
     if (!parent) return;
 
-    const btn = document.createElement("button");
-    btn.id = BTN_CREATE_MO_ID;
-    btn.type = "button";
-    btn.textContent = "Create MO";
-
-    btn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      incrementCounters(1);
-      await runCreateMoFlow();
-    }, { capture: true });
+    const btn = createButton({
+      id: BTN_CREATE_MO_ID,
+      text: "Create MO",
+      onClick: async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        incrementCounters(1);
+        await runCreateMoFlow();
+      },
+    });
 
     parent.insertBefore(btn, createBtn);
   }
 
-  // ----------------------------
-  // Injection: Entity status helper
-  //   - Manufacturing Orders: show ONLY "Done" helper when Not started; hide when Done
-  //   - Sales Orders: show "Pack all" ONLY when Not shipped; hide when Packed
-  // ----------------------------
   function ensureEntityStatusHelper() {
     ensureStyles();
 
@@ -1081,82 +1027,57 @@
 
     let helper = document.getElementById(BTN_STATUS_HELPER_ID);
     if (!helper) {
-      helper = document.createElement("button");
-      helper.id = BTN_STATUS_HELPER_ID;
-      helper.type = "button";
-      helper.textContent = "";
+      helper = createButton({
+        id: BTN_STATUS_HELPER_ID,
+        onClick: async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
 
-      helper.addEventListener("click", async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+          if (helper.getAttribute("data-kh-running") === "1") return;
+          helper.setAttribute("data-kh-running", "1");
 
-        if (helper.getAttribute("data-kh-running") === "1") return;
-        helper.setAttribute("data-kh-running", "1");
+          try {
+            const ctx = getEntityStatusContext();
 
-        try {
-          const ctx = getEntityStatusContext();
-
-          if (ctx.mode === "manufacturing" && ctx.state === "notStarted") {
-            const ok = await runMoSetDoneFlow();
-            if (ok) {
-              incrementCounters(1);
+            if (ctx.mode === "manufacturing" && ctx.state === "notStarted") {
+              const ok = await runMoSetDoneFlow();
+              if (ok) {
+                incrementCounters(1);
+              }
+              return;
             }
-            return;
-          }
 
-          if (ctx.mode === "sales" && ctx.state === "notShipped") {
-            const ok = await runSoPackAllFlow();
-            if (ok) {
-              incrementCounters(1);
+            if (ctx.mode === "sales" && ctx.state === "notShipped") {
+              const ok = await runSoPackAllFlow();
+              if (ok) {
+                incrementCounters(1);
+              }
+              return;
             }
-            return;
+          } finally {
+            helper.setAttribute("data-kh-running", "0");
           }
-        } finally {
-          helper.setAttribute("data-kh-running", "0");
-        }
-      }, { capture: true });
+        },
+      });
 
       parent.insertBefore(helper, statusBtn);
     }
 
     const ctx = getEntityStatusContext();
+    const config = STATUS_HELPER_CONFIG[ctx.mode]?.[ctx.state];
     helper.classList.remove("kh-mo-done", "kh-so-packall");
-    helper.style.display = "";
+    helper.style.display = "none";
     helper.title = "";
 
-    if (ctx.mode === "manufacturing") {
-      if (ctx.state === "done") {
-        helper.style.display = "none";
-        return;
-      }
-      if (ctx.state === "notStarted") {
-        helper.textContent = "Done";
-        helper.classList.add("kh-mo-done");
-        helper.title = "Mark MO as Done";
-        return;
-      }
-      helper.style.display = "none";
-      return;
+    if (config && !config.hidden) {
+      helper.textContent = config.text;
+      helper.classList.add(config.className);
+      helper.title = config.title || "";
+      helper.style.display = "";
     }
-
-    if (ctx.mode === "sales") {
-      if (ctx.state === "notShipped") {
-        helper.textContent = "Pack all";
-        helper.classList.add("kh-so-packall");
-        helper.title = "Pack all (won't count if 'Not enough stock' appears)";
-        return;
-      }
-      helper.style.display = "none";
-      return;
-    }
-
-    helper.style.display = "none";
   }
 
-  // ----------------------------
-  // Injection: SO row EX buttons (single click vs double click via 250ms timer)
-  // ----------------------------
-  const exTimers = new WeakMap(); // button -> timeout id
+  const exTimers = new WeakMap();
 
   function setExButtonUltraVisual(btn, on) {
     if (on) btn.classList.add("kh-ultra");
@@ -1179,84 +1100,80 @@
 
       if (container.querySelector(`button.${BTN_SO_EX_CLASS}`)) return;
 
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = BTN_SO_EX_CLASS;
-      btn.textContent = "EX";
+      const btn = createButton({
+        className: BTN_SO_EX_CLASS,
+        text: "EX",
+        title:
+          `EX (single-click): Make in batch (qty=1) and open the MO.\n` +
+          `Ultra EX (double-click within ${DOUBLE_CLICK_WINDOW_MS}ms): Do EX, then if all ingredients are In stock → mark MO Done and return here.`,
+        onClick: (e) => {
+          e.preventDefault();
+          e.stopPropagation();
 
-      btn.title =
-        `EX (single-click): Make in batch (qty=1) and open the MO.\n` +
-        `Ultra EX (double-click within ${DOUBLE_CLICK_WINDOW_MS}ms): Do EX, then if all ingredients are In stock → mark MO Done and return here.`;
+          if (btn.getAttribute("data-kh-running") === "1") return;
 
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+          const existingTimer = exTimers.get(btn);
 
-        if (btn.getAttribute("data-kh-running") === "1") return;
+          if (existingTimer) {
+            clearTimeout(existingTimer);
+            exTimers.delete(btn);
 
-        const existingTimer = exTimers.get(btn);
+            (async () => {
+              setRunning(btn, true);
+              setExButtonUltraVisual(btn, true);
 
-        // Second click within window => Ultra
-        if (existingTimer) {
-          clearTimeout(existingTimer);
-          exTimers.delete(btn);
-
-          (async () => {
-            setRunning(btn, true);
-            setExButtonUltraVisual(btn, true);
-
-            const rowEl = getClosestAgRow(btn);
-            if (!rowEl) {
-              setExButtonUltraVisual(btn, false);
-              setRunning(btn, false);
-              return;
-            }
-
-            const exRes = await runSoExX1Flow(rowEl);
-            if (!exRes.ok) {
-              setExButtonUltraVisual(btn, false);
-              setRunning(btn, false);
-              return;
-            }
-
-            incrementCounters(SAVED_CLICKS_EX_NORMAL);
-
-            const ultraRes = await runUltraAfterMoOpen(exRes.originUrl);
-            if (ultraRes.ok && ultraRes.ultraDone) {
-              incrementCounters(SAVED_CLICKS_ULTRA_EXTRA);
-            }
-
-            setExButtonUltraVisual(btn, false);
-            setRunning(btn, false);
-          })();
-
-          return;
-        }
-
-        // First click => schedule normal EX if no second click comes in
-        const t = setTimeout(() => {
-          exTimers.delete(btn);
-
-          (async () => {
-            setRunning(btn, true);
-            setExButtonUltraVisual(btn, false);
-
-            try {
               const rowEl = getClosestAgRow(btn);
-              if (!rowEl) return;
+              if (!rowEl) {
+                setExButtonUltraVisual(btn, false);
+                setRunning(btn, false);
+                return;
+              }
 
               const exRes = await runSoExX1Flow(rowEl);
-              if (exRes.ok) {
-                incrementCounters(SAVED_CLICKS_EX_NORMAL);
+              if (!exRes.ok) {
+                setExButtonUltraVisual(btn, false);
+                setRunning(btn, false);
+                return;
               }
-            } finally {
-              setRunning(btn, false);
-            }
-          })();
-        }, DOUBLE_CLICK_WINDOW_MS);
 
-        exTimers.set(btn, t);
-      }, { capture: true });
+              incrementCounters(SAVED_CLICKS_EX_NORMAL);
+
+              const ultraRes = await runUltraAfterMoOpen(exRes.originUrl);
+              if (ultraRes.ok && ultraRes.ultraDone) {
+                incrementCounters(SAVED_CLICKS_ULTRA_EXTRA);
+              }
+
+              setExButtonUltraVisual(btn, false);
+              setRunning(btn, false);
+            })();
+
+            return;
+          }
+
+          const t = setTimeout(() => {
+            exTimers.delete(btn);
+
+            (async () => {
+              setRunning(btn, true);
+              setExButtonUltraVisual(btn, false);
+
+              try {
+                const rowEl = getClosestAgRow(btn);
+                if (!rowEl) return;
+
+                const exRes = await runSoExX1Flow(rowEl);
+                if (exRes.ok) {
+                  incrementCounters(SAVED_CLICKS_EX_NORMAL);
+                }
+              } finally {
+                setRunning(btn, false);
+              }
+            })();
+          }, DOUBLE_CLICK_WINDOW_MS);
+
+          exTimers.set(btn, t);
+        },
+      });
 
       container.insertBefore(btn, plusBtn);
     });
@@ -1281,9 +1198,6 @@
     return match?.[1] || "";
   }
 
-  // ----------------------------
-  // Injection: Etsy order button next to Sales order #
-  // ----------------------------
   function ensureEtsyOrderButton() {
     ensureStyles();
 
@@ -1323,13 +1237,11 @@
       gridContainer.insertBefore(cell, soOrderItem.nextSibling);
     }
 
-    const btn = document.createElement("button");
-    btn.id = BTN_ETSY_ORDER_ID;
-    btn.type = "button";
-    btn.textContent = "Etsy";
-    btn.title = "Goes to Etsy order page (opens in a new window)";
-
-    btn.addEventListener("click", (e) => {
+    const btn = createButton({
+      id: BTN_ETSY_ORDER_ID,
+      text: "Etsy",
+      title: "Goes to Etsy order page (opens in a new window)",
+      onClick: (e) => {
       e.preventDefault();
       e.stopPropagation();
       btn.setAttribute("data-kh-clicked", "1");
@@ -1337,14 +1249,12 @@
       const orderId = getEtsyOrderIdFromHeader();
       const url = orderId ? `${ETSY_ORDER_URL}?order_id=${orderId}` : ETSY_ORDER_URL;
       window.open(url, "_blank", "noopener,noreferrer");
-    }, { capture: true });
+    },
+  });
 
     cell.appendChild(btn);
   }
 
-  // ----------------------------
-  // SPA resilience
-  // ----------------------------
   let scheduled = false;
   let lastRun = 0;
 
@@ -1372,9 +1282,6 @@
     obs.observe(document.documentElement, { childList: true, subtree: true });
   }
 
-  // ----------------------------
-  // Init
-  // ----------------------------
   function init() {
     ensureAll();
     initObserver();
