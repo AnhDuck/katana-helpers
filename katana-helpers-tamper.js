@@ -368,6 +368,7 @@
         pointer-events: auto;
       }
       #${HUD_ID} .kh-hud-text { pointer-events: none; }
+      #${HUD_ID} .kh-hud-total { pointer-events: auto; }
       #${HUD_ID} button {
         pointer-events: auto;
         margin-left: 8px;
@@ -422,7 +423,7 @@
 
       hud.innerHTML = `
         <span class="kh-hud-text">
-          Clicks saved (total): <span id="kh-total">0</span> | (today): <span id="kh-today">0</span>
+          <span class="kh-hud-total" title="Start date: January 3rd, 2026"><strong>Total clicks saved</strong>: <strong id="kh-total">0</strong></span> | <strong>Clicks saved today</strong>: <strong id="kh-today">0</strong>
         </span>
         <button id="kh-reset" type="button" title="Reset total + today">Reset</button>
       `;
