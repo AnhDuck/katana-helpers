@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.5
+// @version      2.6.6
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -26,6 +26,7 @@
   const BTN_STATUS_HELPER_ID = "kh-status-helper-btn"; // MO Done helper OR SO Pack all
   const BTN_SO_EX_CLASS = "kh-so-ex-btn";
   const BTN_ETSY_ORDER_ID = "kh-etsy-order-btn";
+  const ETSY_ORDER_CELL_ID = "kh-etsy-order-cell";
   const ETSY_ORDER_URL = "https://www.etsy.com/your/orders/sold";
 
   const SEL_CREATE_BTN = 'button[data-testid="globalAddButton"]';
@@ -353,14 +354,11 @@
       .${BTN_SO_EX_CLASS}:active { transform: translateY(0.5px) !important; }
 
       /* Etsy button next to Sales order # */
-      .kh-so-order-container {
+      .kh-etsy-order-cell {
         display: flex !important;
         align-items: flex-end !important;
-        gap: 8px !important;
-      }
-      .kh-so-order-container .soOrderNo {
-        flex: 1 1 auto !important;
-        min-width: 0 !important;
+        padding-left: 12px !important;
+        margin-bottom: -16px !important;
       }
       #${BTN_ETSY_ORDER_ID} {
         background: #f26a2e !important;
@@ -1273,23 +1271,35 @@
     const soOrderField = document.querySelector(".soOrderNo");
     if (!soOrderField) return;
 
-    const container = soOrderField.parentElement;
-    if (!container) return;
+    const gridContainer = soOrderField.closest(".MuiGrid-container");
+    if (!gridContainer) return;
+
+    const soOrderItem = soOrderField.closest(".MuiGrid-item");
+    if (!soOrderItem) return;
 
     const orderInput = soOrderField.querySelector('input[name="orderNo"]');
     const orderValue = orderInput?.value || "";
     const isEtsyOrder = orderValue.toLowerCase().includes("etsy");
 
     const existingBtn = document.getElementById(BTN_ETSY_ORDER_ID);
+    const existingCell = document.getElementById(ETSY_ORDER_CELL_ID);
     if (!isEtsyOrder) {
       existingBtn?.remove();
-      container.classList.remove("kh-so-order-container");
+      if (existingCell && !existingCell.querySelector("button")) {
+        existingCell.remove();
+      }
       return;
     }
 
-    container.classList.add("kh-so-order-container");
-
     if (existingBtn) return;
+
+    let cell = existingCell;
+    if (!cell) {
+      cell = document.createElement("div");
+      cell.id = ETSY_ORDER_CELL_ID;
+      cell.className = "MuiGrid-root MuiGrid-item kh-etsy-order-cell";
+      gridContainer.insertBefore(cell, soOrderItem.nextSibling);
+    }
 
     const btn = document.createElement("button");
     btn.id = BTN_ETSY_ORDER_ID;
@@ -1305,7 +1315,7 @@
       window.open(ETSY_ORDER_URL, "_blank", "noopener,noreferrer");
     }, { capture: true });
 
-    container.appendChild(btn);
+    cell.appendChild(btn);
   }
 
   // ----------------------------
