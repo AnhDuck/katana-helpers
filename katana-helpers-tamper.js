@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.6
+// @version      2.6.7
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -1262,6 +1262,18 @@
     });
   }
 
+  function findMuiGridAncestor(el, type) {
+    let node = el;
+    const prefix = `MuiGrid-${type}`;
+    while (node && node !== document.body) {
+      if (node.classList && [...node.classList].some(cls => cls.startsWith(prefix))) {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
   // ----------------------------
   // Injection: Etsy order button next to Sales order #
   // ----------------------------
@@ -1271,10 +1283,10 @@
     const soOrderField = document.querySelector(".soOrderNo");
     if (!soOrderField) return;
 
-    const gridContainer = soOrderField.closest(".MuiGrid-container");
+    const gridContainer = findMuiGridAncestor(soOrderField, "container");
     if (!gridContainer) return;
 
-    const soOrderItem = soOrderField.closest(".MuiGrid-item");
+    const soOrderItem = findMuiGridAncestor(soOrderField, "item");
     if (!soOrderItem) return;
 
     const orderInput = soOrderField.querySelector('input[name="orderNo"]');
@@ -1296,8 +1308,11 @@
     let cell = existingCell;
     if (!cell) {
       cell = document.createElement("div");
+      const baseItemClasses = [...soOrderItem.classList]
+        .filter(cls => cls.startsWith("MuiGrid-root") || cls.startsWith("MuiGrid-item"))
+        .join(" ");
       cell.id = ETSY_ORDER_CELL_ID;
-      cell.className = "MuiGrid-root MuiGrid-item kh-etsy-order-cell";
+      cell.className = `${baseItemClasses} kh-etsy-order-cell`.trim();
       gridContainer.insertBefore(cell, soOrderItem.nextSibling);
     }
 
