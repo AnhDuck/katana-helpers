@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
+// @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.9
+// @version      2.7.0
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -49,7 +49,7 @@
   const SAVED_CLICKS_EX_NORMAL = 4;
   const SAVED_CLICKS_ULTRA_EXTRA = 2;
 
-  const ULTRA_MAX_WAIT_FOR_READY_MS = 6000;
+  const ULTRA_MAX_WAIT_FOR_READY_MS = 7000;
   const ULTRA_READY_POLL_MS = 140;
   const ULTRA_READY_COUNTDOWN_THRESHOLD_MS = 1500;
   const ULTRA_WAIT_GRID_MS = 20000;
