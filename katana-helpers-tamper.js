@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.7
+// @version      2.6.8
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -1274,6 +1274,13 @@
     return null;
   }
 
+  function getEtsyOrderIdFromHeader() {
+    const header = document.querySelector('[data-testid="headerNameSALESORDER"]');
+    const text = header?.textContent || "";
+    const match = text.match(/ETSY[\s\-_]+(\d+)/i);
+    return match?.[1] || "";
+  }
+
   // ----------------------------
   // Injection: Etsy order button next to Sales order #
   // ----------------------------
@@ -1327,7 +1334,9 @@
       e.stopPropagation();
       btn.setAttribute("data-kh-clicked", "1");
       setTimeout(() => btn.removeAttribute("data-kh-clicked"), 220);
-      window.open(ETSY_ORDER_URL, "_blank", "noopener,noreferrer");
+      const orderId = getEtsyOrderIdFromHeader();
+      const url = orderId ? `${ETSY_ORDER_URL}?order_id=${orderId}` : ETSY_ORDER_URL;
+      window.open(url, "_blank", "noopener,noreferrer");
     }, { capture: true });
 
     cell.appendChild(btn);
