@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.3
-// @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters + confetti on success.
+// @version      2.6.4
+// @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
 // @grant        none
-// @require      https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js
 // ==/UserScript==
 
 (() => {
@@ -204,22 +203,6 @@
 
   function normText(s) {
     return (s || "").replace(/\s+/g, " ").trim().toLowerCase();
-  }
-
-  // ----------------------------
-  // Confetti (safe)
-  // ----------------------------
-  function fireConfetti() {
-    const c = window.confetti;
-    if (typeof c !== "function") return;
-
-    c({
-      particleCount: 60,
-      spread: 75,
-      startVelocity: 32,
-      ticks: 120,
-      origin: { y: 0.75 },
-    });
   }
 
   // ----------------------------
@@ -874,8 +857,10 @@
     let lastDiag = null;
     let stableCount = 0;
 
-    for (let pass = 1; pass <= passLimit; pass++) {
-      if (Date.now() - start > timeoutMs) break;
+    let pass = 0;
+    while (Date.now() - start <= timeoutMs) {
+      pass += 1;
+      if (pass > passLimit && lastDiag?.loading === 0 && lastDiag?.unknown === 0) break;
 
       const prevDiag = lastDiag;
       const { ready, diag } = await runOnePass(pass);
@@ -958,7 +943,7 @@
     const scanPassLimit = 3;
     const stopSpinner = startSpinnerToast(() => {
       const d = latestDiag;
-      const passText = d.pass ? `pass ${d.pass}/${scanPassLimit}` : `pass 1/${scanPassLimit}`;
+      const passText = d.pass ? `pass ${d.pass}` : "pass 1";
       const scrollProbe = DEBUG ? ` | scroll ${d.scrollTop}/${d.maxScroll}` : "";
       return `Ultra EX: scanning… ${passText} | rows ${d.rowsSeen} (in ${d.in_stock}, not ${d.not_available}, load ${d.loading}, unk ${d.unknown})${scrollProbe}`;
     });
@@ -1080,7 +1065,6 @@
             const ok = await runMoSetDoneFlow();
             if (ok) {
               incrementCounters(1);
-              fireConfetti();
             }
             return;
           }
@@ -1089,7 +1073,6 @@
             const ok = await runSoPackAllFlow();
             if (ok) {
               incrementCounters(1);
-              fireConfetti();
             }
             return;
           }
@@ -1201,13 +1184,11 @@
               return;
             }
 
-            fireConfetti();
             incrementCounters(SAVED_CLICKS_EX_NORMAL);
 
             const ultraRes = await runUltraAfterMoOpen(exRes.originUrl);
             if (ultraRes.ok && ultraRes.ultraDone) {
               incrementCounters(SAVED_CLICKS_ULTRA_EXTRA);
-              fireConfetti();
             }
 
             setExButtonUltraVisual(btn, false);
@@ -1232,7 +1213,6 @@
               const exRes = await runSoExX1Flow(rowEl);
               if (exRes.ok) {
                 incrementCounters(SAVED_CLICKS_EX_NORMAL);
-                fireConfetti();
               }
             } finally {
               setRunning(btn, false);
