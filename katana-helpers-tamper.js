@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD + Confetti
 // @namespace    https://factory.katanamrp.com/
-// @version      2.6.4
+// @version      2.6.5
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -368,6 +368,7 @@
         pointer-events: auto;
       }
       #${HUD_ID} .kh-hud-text { pointer-events: none; }
+      #${HUD_ID} .kh-hud-total { pointer-events: auto; }
       #${HUD_ID} button {
         pointer-events: auto;
         margin-left: 8px;
@@ -422,7 +423,7 @@
 
       hud.innerHTML = `
         <span class="kh-hud-text">
-          Clicks saved (total): <span id="kh-total">0</span> | (today): <span id="kh-today">0</span>
+          <span class="kh-hud-total" title="Start date: January 3rd, 2026">Total clicks saved: <strong id="kh-total">0</strong></span> | Clicks saved today: <strong id="kh-today">0</strong>
         </span>
         <button id="kh-reset" type="button" title="Reset total + today">Reset</button>
       `;
