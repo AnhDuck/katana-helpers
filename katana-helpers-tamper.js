@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD
 // @namespace    https://factory.katanamrp.com/
-// @version      2.8.1
+// @version      2.8.2
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -30,6 +30,7 @@
   const ETSY_ORDER_URL = "https://www.etsy.com/your/orders/sold";
 
   const KEY_RETURN_URL = "kh_return_url";
+  const KEY_RETURN_LABEL = "kh_return_label";
 
   const SEL_CREATE_BTN = 'button[data-testid="globalAddButton"]';
   const SEL_MO_ITEM = 'a[data-testid="globalAddManufacturing"]';
@@ -1037,12 +1038,27 @@
     }
   }
 
+  function getStoredReturnLabel() {
+    try {
+      return sessionStorage.getItem(KEY_RETURN_LABEL) || "";
+    } catch {
+      return "";
+    }
+  }
+
   function storeReturnUrl(rawUrl) {
     if (!rawUrl) return;
     const normalized = normalizeReturnUrl(rawUrl);
     if (!normalized) return;
     try {
       sessionStorage.setItem(KEY_RETURN_URL, normalized);
+    } catch {}
+  }
+
+  function storeReturnLabel(label) {
+    if (!label) return;
+    try {
+      sessionStorage.setItem(KEY_RETURN_LABEL, label);
     } catch {}
   }
 
@@ -1076,7 +1092,10 @@
       const parsed = new URL(rawUrl, window.location.origin);
       const path = parsed.pathname || "";
       const idSuffix = getEntityIdSuffix(path);
-      if (path.startsWith("/sales-orders")) return `Sales order${idSuffix}`;
+      if (path.startsWith("/sales-orders")) {
+        const storedLabel = getStoredReturnLabel();
+        return storedLabel || `Sales order${idSuffix}`;
+      }
       if (path.startsWith("/manufacturing-orders")) return `Manufacturing orders${idSuffix}`;
       if (path.startsWith("/purchase-orders")) return `Purchase order${idSuffix}`;
       if (path.startsWith("/inventory")) return "Inventory";
@@ -1135,6 +1154,16 @@
     const current = window.location.href;
     if (isSameUrl(refUrl, current)) return;
     storeReturnUrl(refUrl);
+  }
+
+  function storeReturnLabelFromSalesOrderPage() {
+    const path = window.location.pathname || "";
+    if (!path.startsWith("/sales-orders/")) return;
+    const orderInput = document.querySelector('input[name="orderNo"]');
+    const orderValue = orderInput?.value?.trim();
+    if (!orderValue) return;
+    storeReturnLabel(`Sales order ${orderValue}`);
+    storeReturnUrl(window.location.href);
   }
 
   function ensureCreateMoButton() {
@@ -1226,6 +1255,11 @@
   function ensureMoDoneReturnButton() {
     ensureStyles();
 
+    if (!window.location.pathname.startsWith("/manufacturing-orders/")) {
+      document.getElementById(WRAP_MO_DONE_RETURN_ID)?.remove();
+      return;
+    }
+
     const statusBtn = document.querySelector(SEL_ENTITY_STATUS_BTN);
     if (!statusBtn) return;
 
@@ -1258,6 +1292,7 @@
             }
 
             const returnTitle = getReturnTitle();
+            incrementCounters(2);
             if (history.length > 1) {
               showToast(`Done ↩︎: returning to ${returnTitle}`);
               history.back();
@@ -1500,6 +1535,7 @@
     ensureMoDoneReturnButton();
     ensureSoExButtons();
     ensureEtsyOrderButton();
+    storeReturnLabelFromSalesOrderPage();
   }
 
   function scheduleEnsure() {
