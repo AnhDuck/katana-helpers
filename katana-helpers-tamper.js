@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD
 // @namespace    https://factory.katanamrp.com/
-// @version      2.8.3
+// @version      2.8.4
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -30,7 +30,6 @@
   const ETSY_ORDER_URL = "https://www.etsy.com/your/orders/sold";
 
   const KEY_RETURN_URL = "kh_return_url";
-  const KEY_RETURN_LABEL = "kh_return_label";
 
   const SEL_CREATE_BTN = 'button[data-testid="globalAddButton"]';
   const SEL_MO_ITEM = 'a[data-testid="globalAddManufacturing"]';
@@ -313,7 +312,7 @@
       #${WRAP_MO_DONE_RETURN_ID} {
         display: inline-flex !important;
         flex-direction: column !important;
-        align-items: flex-start !important;
+        align-items: center !important;
         margin-right: 10px !important;
         line-height: 1.1 !important;
       }
@@ -340,6 +339,8 @@
         font-size: 11px !important;
         color: rgba(0,0,0,0.6) !important;
         white-space: nowrap !important;
+        text-align: center !important;
+        width: 100% !important;
       }
 
       .${BTN_SO_EX_CLASS} {
@@ -1038,27 +1039,12 @@
     }
   }
 
-  function getStoredReturnLabel() {
-    try {
-      return sessionStorage.getItem(KEY_RETURN_LABEL) || "";
-    } catch {
-      return "";
-    }
-  }
-
   function storeReturnUrl(rawUrl) {
     if (!rawUrl) return;
     const normalized = normalizeReturnUrl(rawUrl);
     if (!normalized) return;
     try {
       sessionStorage.setItem(KEY_RETURN_URL, normalized);
-    } catch {}
-  }
-
-  function storeReturnLabel(label) {
-    if (!label) return;
-    try {
-      sessionStorage.setItem(KEY_RETURN_LABEL, label);
     } catch {}
   }
 
@@ -1086,56 +1072,6 @@
     }
   }
 
-  function getReturnTitleFromUrl(rawUrl) {
-    if (!rawUrl) return "Katana";
-    try {
-      const parsed = new URL(rawUrl, window.location.origin);
-      const path = parsed.pathname || "";
-      const idSuffix = getEntityIdSuffix(path);
-      if (path.startsWith("/sales-orders")) {
-        const storedLabel = getStoredReturnLabel();
-        return storedLabel || `Sales order${idSuffix}`;
-      }
-      if (path.startsWith("/manufacturing-orders")) return `Manufacturing orders${idSuffix}`;
-      if (path.startsWith("/purchase-orders")) return `Purchase order${idSuffix}`;
-      if (path.startsWith("/inventory")) return "Inventory";
-      const cleanPath = path && path !== "/" ? ` (${path})` : "";
-      return `Katana${cleanPath}`;
-    } catch {
-      return "Katana";
-    }
-  }
-
-  function getEntityIdSuffix(path) {
-    if (!path) return "";
-    const match = path.match(/\/(sales-orders|manufacturing-orders|purchase-orders)\/([^/?#]+)/);
-    if (!match) return "";
-    const id = match[2];
-    if (!id) return "";
-    const cleaned = id.replace(/[^a-zA-Z0-9-]/g, "");
-    if (!cleaned) return "";
-    return ` #${cleaned}`;
-  }
-
-  function getReturnTitle() {
-    const stored = getStoredReturnUrl();
-    const normalizedStored = normalizeReturnUrl(stored);
-    if (normalizedStored && !isSameUrl(normalizedStored, window.location.href)) {
-      return getReturnTitleFromUrl(normalizedStored);
-    }
-
-    if (document.referrer) {
-      try {
-        const ref = new URL(document.referrer);
-        if (ref.origin === window.location.origin) {
-          return getReturnTitleFromUrl(ref.href);
-        }
-      } catch {}
-    }
-
-    return "Previous page";
-  }
-
   function maybeStoreReturnUrlFromReferrer() {
     const existing = normalizeReturnUrl(getStoredReturnUrl());
     if (existing && !isSameUrl(existing, window.location.href)) return;
@@ -1154,16 +1090,6 @@
     const current = window.location.href;
     if (isSameUrl(refUrl, current)) return;
     storeReturnUrl(refUrl);
-  }
-
-  function storeReturnLabelFromSalesOrderPage() {
-    const path = window.location.pathname || "";
-    if (!path.startsWith("/sales-orders/")) return;
-    const orderInput = document.querySelector('input[name="orderNo"]');
-    const orderValue = orderInput?.value?.trim();
-    if (!orderValue) return;
-    storeReturnLabel(`Sales order ${orderValue}`);
-    storeReturnUrl(window.location.href);
   }
 
   function ensureCreateMoButton() {
@@ -1286,10 +1212,9 @@
               return;
             }
 
-            const returnTitle = getReturnTitle();
             incrementCounters(2);
             if (history.length > 1) {
-              showToast(`Done & ↩︎: returning to ${returnTitle}`);
+              showToast("Done & ↩︎: returning to previous page");
               history.back();
               return;
             }
@@ -1297,7 +1222,7 @@
             const storedUrl = getStoredReturnUrl();
             const normalizedStored = normalizeReturnUrl(storedUrl);
             if (normalizedStored && !isSameUrl(normalizedStored, window.location.href)) {
-              showToast(`Done & ↩︎: returning to ${returnTitle}`);
+              showToast("Done & ↩︎: returning to previous page");
               window.location.href = normalizedStored;
               return;
             }
@@ -1332,7 +1257,7 @@
       maybeStoreReturnUrlFromReferrer();
       const label = wrap.querySelector(`.${LABEL_MO_DONE_RETURN_CLASS}`);
       if (label) {
-        label.textContent = `Returns to: ${getReturnTitle()}`;
+        label.textContent = "Returns to: Previous page";
       }
     } else {
       wrap.remove();
@@ -1532,7 +1457,6 @@
     ensureMoDoneReturnButton();
     ensureSoExButtons();
     ensureEtsyOrderButton();
-    storeReturnLabelFromSalesOrderPage();
   }
 
   function scheduleEnsure() {
