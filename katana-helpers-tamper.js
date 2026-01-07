@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD
 // @namespace    https://factory.katanamrp.com/
-// @version      2.8.2
+// @version      2.8.3
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -1255,11 +1255,6 @@
   function ensureMoDoneReturnButton() {
     ensureStyles();
 
-    if (!window.location.pathname.startsWith("/manufacturing-orders/")) {
-      document.getElementById(WRAP_MO_DONE_RETURN_ID)?.remove();
-      return;
-    }
-
     const statusBtn = document.querySelector(SEL_ENTITY_STATUS_BTN);
     if (!statusBtn) return;
 
@@ -1273,7 +1268,7 @@
 
       const btn = createButton({
         id: BTN_MO_DONE_RETURN_ID,
-        text: "Done ↩︎",
+        text: "Done & ↩︎",
         title: "Mark Done, then return to the previous page.",
         onClick: async (e) => {
           e.preventDefault();
@@ -1284,7 +1279,7 @@
           btn.disabled = true;
 
           try {
-            showToast("Done ↩︎: marking Done…");
+            showToast("Done & ↩︎: marking Done…");
             const ok = await runMoSetDoneFlow();
             if (!ok) {
               showToast("Couldn't set Done — not returning.");
@@ -1294,7 +1289,7 @@
             const returnTitle = getReturnTitle();
             incrementCounters(2);
             if (history.length > 1) {
-              showToast(`Done ↩︎: returning to ${returnTitle}`);
+              showToast(`Done & ↩︎: returning to ${returnTitle}`);
               history.back();
               return;
             }
@@ -1302,7 +1297,7 @@
             const storedUrl = getStoredReturnUrl();
             const normalizedStored = normalizeReturnUrl(storedUrl);
             if (normalizedStored && !isSameUrl(normalizedStored, window.location.href)) {
-              showToast(`Done ↩︎: returning to ${returnTitle}`);
+              showToast(`Done & ↩︎: returning to ${returnTitle}`);
               window.location.href = normalizedStored;
               return;
             }
@@ -1339,6 +1334,8 @@
       if (label) {
         label.textContent = `Returns to: ${getReturnTitle()}`;
       }
+    } else {
+      wrap.remove();
     }
   }
 
