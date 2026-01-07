@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD
 // @namespace    https://factory.katanamrp.com/
-// @version      2.7.0
+// @version      2.8.4
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -21,10 +21,15 @@
 
   const BTN_CREATE_MO_ID = "kh-create-mo-btn";
   const BTN_STATUS_HELPER_ID = "kh-status-helper-btn";
+  const BTN_MO_DONE_RETURN_ID = "kh-mo-done-return-btn";
+  const WRAP_MO_DONE_RETURN_ID = "kh-mo-done-return-wrap";
+  const LABEL_MO_DONE_RETURN_CLASS = "kh-mo-done-return-label";
   const BTN_SO_EX_CLASS = "kh-so-ex-btn";
   const BTN_ETSY_ORDER_ID = "kh-etsy-order-btn";
   const ETSY_ORDER_CELL_ID = "kh-etsy-order-cell";
   const ETSY_ORDER_URL = "https://www.etsy.com/your/orders/sold";
+
+  const KEY_RETURN_URL = "kh_return_url";
 
   const SEL_CREATE_BTN = 'button[data-testid="globalAddButton"]';
   const SEL_MO_ITEM = 'a[data-testid="globalAddManufacturing"]';
@@ -303,6 +308,40 @@
 
       #${BTN_STATUS_HELPER_ID}:hover { border-color: rgba(0,0,0,0.45) !important; }
       #${BTN_STATUS_HELPER_ID}:active { transform: translateY(0.5px) !important; }
+
+      #${WRAP_MO_DONE_RETURN_ID} {
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        margin-right: 10px !important;
+        line-height: 1.1 !important;
+      }
+      #${BTN_MO_DONE_RETURN_ID} {
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        font: inherit !important;
+        cursor: pointer !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+        border: 1px solid rgba(0,0,0,0.25) !important;
+        font-weight: 800 !important;
+        background: rgba(47, 111, 221, 0.98) !important;
+        color: #fff !important;
+      }
+      #${BTN_MO_DONE_RETURN_ID}[data-kh-running="1"] {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+      }
+      #${BTN_MO_DONE_RETURN_ID}:hover { border-color: rgba(0,0,0,0.45) !important; }
+      #${BTN_MO_DONE_RETURN_ID}:active { transform: translateY(0.5px) !important; }
+      .${LABEL_MO_DONE_RETURN_CLASS} {
+        margin-top: 4px !important;
+        font-size: 11px !important;
+        color: rgba(0,0,0,0.6) !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+        width: 100% !important;
+      }
 
       .${BTN_SO_EX_CLASS} {
         background: rgba(153, 184, 230, 0.95) !important;
@@ -627,6 +666,7 @@
 
     const originUrl = window.location.href;
     const prevUrl = window.location.href;
+    storeReturnUrl(originUrl);
     dispatchRealClick(createAndOpen);
 
     try {
@@ -991,6 +1031,67 @@
     return { ok: true, ultraDone: true };
   }
 
+  function getStoredReturnUrl() {
+    try {
+      return sessionStorage.getItem(KEY_RETURN_URL) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function storeReturnUrl(rawUrl) {
+    if (!rawUrl) return;
+    const normalized = normalizeReturnUrl(rawUrl);
+    if (!normalized) return;
+    try {
+      sessionStorage.setItem(KEY_RETURN_URL, normalized);
+    } catch {}
+  }
+
+  function normalizeReturnUrl(rawUrl) {
+    if (!rawUrl) return "";
+    if (rawUrl.startsWith("/")) {
+      const abs = new URL(rawUrl, window.location.origin);
+      return abs.href;
+    }
+    try {
+      const parsed = new URL(rawUrl);
+      if (parsed.origin !== window.location.origin) return "";
+      return parsed.href;
+    } catch {
+      return "";
+    }
+  }
+
+  function isSameUrl(a, b) {
+    if (!a || !b) return false;
+    try {
+      return new URL(a).href === new URL(b).href;
+    } catch {
+      return false;
+    }
+  }
+
+  function maybeStoreReturnUrlFromReferrer() {
+    const existing = normalizeReturnUrl(getStoredReturnUrl());
+    if (existing && !isSameUrl(existing, window.location.href)) return;
+
+    if (!document.referrer) return;
+
+    let refUrl = "";
+    try {
+      const ref = new URL(document.referrer);
+      if (ref.origin !== window.location.origin) return;
+      refUrl = ref.href;
+    } catch {
+      return;
+    }
+
+    const current = window.location.href;
+    if (isSameUrl(refUrl, current)) return;
+    storeReturnUrl(refUrl);
+  }
+
   function ensureCreateMoButton() {
     ensureStyles();
 
@@ -1074,6 +1175,92 @@
       helper.classList.add(config.className);
       helper.title = config.title || "";
       helper.style.display = "";
+    }
+  }
+
+  function ensureMoDoneReturnButton() {
+    ensureStyles();
+
+    const statusBtn = document.querySelector(SEL_ENTITY_STATUS_BTN);
+    if (!statusBtn) return;
+
+    const parent = statusBtn.parentElement;
+    if (!parent) return;
+
+    let wrap = document.getElementById(WRAP_MO_DONE_RETURN_ID);
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = WRAP_MO_DONE_RETURN_ID;
+
+      const btn = createButton({
+        id: BTN_MO_DONE_RETURN_ID,
+        text: "Done & ↩︎",
+        title: "Mark Done, then return to the previous page.",
+        onClick: async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          if (btn.getAttribute("data-kh-running") === "1") return;
+          btn.setAttribute("data-kh-running", "1");
+          btn.disabled = true;
+
+          try {
+            showToast("Done & ↩︎: marking Done…");
+            const ok = await runMoSetDoneFlow();
+            if (!ok) {
+              showToast("Couldn't set Done — not returning.");
+              return;
+            }
+
+            incrementCounters(2);
+            if (history.length > 1) {
+              showToast("Done & ↩︎: returning to previous page");
+              history.back();
+              return;
+            }
+
+            const storedUrl = getStoredReturnUrl();
+            const normalizedStored = normalizeReturnUrl(storedUrl);
+            if (normalizedStored && !isSameUrl(normalizedStored, window.location.href)) {
+              showToast("Done & ↩︎: returning to previous page");
+              window.location.href = normalizedStored;
+              return;
+            }
+
+            showToast("No previous page found — stayed on this MO.");
+          } finally {
+            btn.setAttribute("data-kh-running", "0");
+            btn.disabled = false;
+          }
+        },
+      });
+
+      const label = document.createElement("div");
+      label.className = LABEL_MO_DONE_RETURN_CLASS;
+      label.textContent = "Returns to: Previous page";
+
+      wrap.appendChild(btn);
+      wrap.appendChild(label);
+
+      const helper = document.getElementById(BTN_STATUS_HELPER_ID);
+      if (helper) {
+        parent.insertBefore(wrap, helper);
+      } else {
+        parent.insertBefore(wrap, statusBtn);
+      }
+    }
+
+    const ctx = getEntityStatusContext();
+    wrap.style.display = "none";
+    if (ctx.mode === "manufacturing" && ctx.state === "notStarted") {
+      wrap.style.display = "";
+      maybeStoreReturnUrlFromReferrer();
+      const label = wrap.querySelector(`.${LABEL_MO_DONE_RETURN_CLASS}`);
+      if (label) {
+        label.textContent = "Returns to: Previous page";
+      }
+    } else {
+      wrap.remove();
     }
   }
 
@@ -1267,6 +1454,7 @@
     ensureHud();
     ensureCreateMoButton();
     ensureEntityStatusHelper();
+    ensureMoDoneReturnButton();
     ensureSoExButtons();
     ensureEtsyOrderButton();
   }
