@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers — Create MO + MO Done Helper + SO Pack All + SO EX/Ultra EX + Clicks HUD
 // @namespace    https://factory.katanamrp.com/
-// @version      2.8.0
+// @version      2.8.1
 // @description  Create MO button + MO Done helper (only shows when Not started) + Sales Order Pack all helper + SO row EX (Make in batch qty=1 open MO) + Ultra EX (double-click: auto-Done if all In stock, then go back) + HUD counters.
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
@@ -1075,19 +1075,35 @@
     try {
       const parsed = new URL(rawUrl, window.location.origin);
       const path = parsed.pathname || "";
-      if (path.startsWith("/sales-orders")) return "Sales order";
-      if (path.startsWith("/manufacturing-orders")) return "Manufacturing orders";
-      if (path.startsWith("/purchase-orders")) return "Purchase order";
+      const idSuffix = getEntityIdSuffix(path);
+      if (path.startsWith("/sales-orders")) return `Sales order${idSuffix}`;
+      if (path.startsWith("/manufacturing-orders")) return `Manufacturing orders${idSuffix}`;
+      if (path.startsWith("/purchase-orders")) return `Purchase order${idSuffix}`;
       if (path.startsWith("/inventory")) return "Inventory";
-      return "Katana";
+      const cleanPath = path && path !== "/" ? ` (${path})` : "";
+      return `Katana${cleanPath}`;
     } catch {
       return "Katana";
     }
   }
 
+  function getEntityIdSuffix(path) {
+    if (!path) return "";
+    const match = path.match(/\/(sales-orders|manufacturing-orders|purchase-orders)\/([^/?#]+)/);
+    if (!match) return "";
+    const id = match[2];
+    if (!id) return "";
+    const cleaned = id.replace(/[^a-zA-Z0-9-]/g, "");
+    if (!cleaned) return "";
+    return ` #${cleaned}`;
+  }
+
   function getReturnTitle() {
     const stored = getStoredReturnUrl();
-    if (stored) return getReturnTitleFromUrl(stored);
+    const normalizedStored = normalizeReturnUrl(stored);
+    if (normalizedStored && !isSameUrl(normalizedStored, window.location.href)) {
+      return getReturnTitleFromUrl(normalizedStored);
+    }
 
     if (document.referrer) {
       try {
@@ -1102,8 +1118,8 @@
   }
 
   function maybeStoreReturnUrlFromReferrer() {
-    const existing = getStoredReturnUrl();
-    if (existing) return;
+    const existing = normalizeReturnUrl(getStoredReturnUrl());
+    if (existing && !isSameUrl(existing, window.location.href)) return;
 
     if (!document.referrer) return;
 
@@ -1237,24 +1253,22 @@
             showToast("Done ↩︎: marking Done…");
             const ok = await runMoSetDoneFlow();
             if (!ok) {
-              showToast("Done ↩︎ failed — continue manually.");
+              showToast("Couldn't set Done — not returning.");
+              return;
+            }
+
+            const returnTitle = getReturnTitle();
+            if (history.length > 1) {
+              showToast(`Done ↩︎: returning to ${returnTitle}`);
+              history.back();
               return;
             }
 
             const storedUrl = getStoredReturnUrl();
             const normalizedStored = normalizeReturnUrl(storedUrl);
-            const current = window.location.href;
-            const returnTitle = getReturnTitle();
-
-            if (normalizedStored && !isSameUrl(normalizedStored, current)) {
+            if (normalizedStored && !isSameUrl(normalizedStored, window.location.href)) {
               showToast(`Done ↩︎: returning to ${returnTitle}`);
               window.location.href = normalizedStored;
-              return;
-            }
-
-            if (history.length > 1) {
-              showToast(`Done ↩︎: returning to ${returnTitle}`);
-              history.back();
               return;
             }
 
