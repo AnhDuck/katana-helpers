@@ -156,6 +156,8 @@
       text: "Cancel",
       onClick: (event) => {
         event.preventDefault();
+        const savedState = getSupplierState(state.name);
+        if (savedState && onPreview) onPreview(savedState);
         activePreviewLabel = null;
         activePreviewSupplierKey = null;
         closeEditModal(modal);
