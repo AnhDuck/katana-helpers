@@ -19,6 +19,7 @@
     kh.features.soEx.ensureSoExButtons();
     kh.features.etsyButton.ensureEtsyOrderButton();
     kh.features.poSupplierShortcut.ensureSupplierShortcutButton();
+    kh.features.simplyPrintNav.ensureSimplyPrintNavButton();
   };
 
   const scheduleEnsure = () => {

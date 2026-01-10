@@ -191,6 +191,23 @@
         color: #fff !important;
       }
 
+      #${constants.IDS.BTN_SIMPLYPRINT_NAV} {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      #${constants.IDS.BTN_SIMPLYPRINT_NAV}.${constants.CLASSES.SIMPLYPRINT_NAV} .kh-simplyprint-label {
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 4px !important;
+      }
+      #${constants.IDS.BTN_SIMPLYPRINT_NAV}.${constants.CLASSES.SIMPLYPRINT_NAV} .kh-simplyprint-icon {
+        width: 18px !important;
+        height: 18px !important;
+        display: inline-block !important;
+      }
+
       #${constants.IDS.HUD} {
         position: fixed;
         left: 50%;

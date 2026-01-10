@@ -21,5 +21,6 @@
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/soEx.js
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/etsyButton.js
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/poSupplierShortcut.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/simplyPrintNav.js
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/init.js
 // ==/UserScript==

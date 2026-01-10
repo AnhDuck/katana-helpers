@@ -22,6 +22,7 @@
       BTN_ETSY_ORDER: "kh-etsy-order-btn",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",
       BTN_PO_SUPPLIER: "kh-po-supplier-btn",
+      BTN_SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
     },
     CLASSES: {
       LABEL_MO_DONE_RETURN: "kh-mo-done-return-label",
@@ -31,11 +32,13 @@
       PO_SUPPLIER_ALI: "kh-po-supplier-aliexpress",
       PO_SUPPLIER_GRAINGER: "kh-po-supplier-grainger",
       PO_SUPPLIER_AMAZON: "kh-po-supplier-amazon",
+      SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
     },
     SELECTORS: {
       CREATE_BTN: 'button[data-testid="globalAddButton"]',
       MO_ITEM: 'a[data-testid="globalAddManufacturing"]',
       PO_ITEM: 'a[data-testid="globalAddPurchase"]',
+      NAV_ITEMS_BTN: '[data-testid="MainNavigationPortfolio"]',
       ENTITY_STATUS_BTN: 'button[data-testid="menuButton-entityStatus"]',
       MO_STATUS_DONE_ITEM: 'li[data-testid="menuListItem-entityStatus-done"]',
       SO_STATUS_PACK_ALL_ITEM: 'li[data-testid="menuListItem-entityStatus-packAll"]',
@@ -55,6 +58,8 @@
     },
     URLS: {
       ETSY_ORDER: "https://www.etsy.com/your/orders/sold",
+      SIMPLYPRINT_PANEL: "https://simplyprint.io/panel/printers",
+      SIMPLYPRINT_ICON: "https://simplyprint.io/favicon.ico",
     },
     CONFIG: {
       DOUBLE_CLICK_WINDOW_MS: 250,

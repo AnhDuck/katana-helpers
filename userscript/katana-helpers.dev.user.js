@@ -31,6 +31,7 @@
     "src/features/soEx.js",
     "src/features/etsyButton.js",
     "src/features/poSupplierShortcut.js",
+    "src/features/simplyPrintNav.js",
     "src/init.js",
   ];
 
