@@ -33,7 +33,7 @@
     banner.textContent = warningText;
     banner.style.cssText = [
       "position: fixed",
-      "top: 0",
+      "bottom: 0",
       "left: 0",
       "right: 0",
       "z-index: 10001",
@@ -41,9 +41,10 @@
       "color: #fff",
       "font-weight: 700",
       "font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
-      "padding: 8px 12px",
+      "padding: 4px 10px",
       "text-align: center",
-      "box-shadow: 0 2px 8px rgba(0,0,0,0.3)",
+      "box-shadow: 0 -2px 8px rgba(0,0,0,0.3)",
+      "font-size: 12px",
     ].join("; ");
     document.documentElement.appendChild(banner);
   };
