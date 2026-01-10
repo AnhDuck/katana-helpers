@@ -59,7 +59,7 @@
     URLS: {
       ETSY_ORDER: "https://www.etsy.com/your/orders/sold",
       SIMPLYPRINT_PANEL: "https://simplyprint.io/panel/printers",
-      SIMPLYPRINT_ICON: "https://simplyprint.io/favicon.ico",
+      SIMPLYPRINT_ICON: "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://simplyprint.io/favicon.ico&size=64",
     },
     CONFIG: {
       DOUBLE_CLICK_WINDOW_MS: 250,
