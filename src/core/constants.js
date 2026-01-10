@@ -7,6 +7,7 @@
       TOTAL: "kh_clicks_total",
       BY_DATE: "kh_clicks_by_date",
       RETURN_URL: "kh_return_url",
+      SO_TIMERS: "kh_so_timer_state",
     },
     IDS: {
       STYLE: "kh-style",

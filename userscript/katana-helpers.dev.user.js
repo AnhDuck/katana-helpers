@@ -13,7 +13,7 @@
 (() => {
   // Paste your branch URL here (tree URL or raw base URL).
   // Example: https://github.com/AnhDuck/katana-helpers/tree/codex/implement-manufacturing-order-timer
-  const DEV_BRANCH_URL = "https://github.com/AnhDuck/katana-helpers/tree/codex/work";
+  const DEV_BRANCH_URL = "https://github.com/AnhDuck/katana-helpers/tree/work";
 
   const MODULE_PATHS = [
     "src/core/constants.js",
