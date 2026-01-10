@@ -6,19 +6,20 @@
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
 // @grant        none
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/core/constants.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/core/utils.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/core/storage.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/styles.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/toast.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/hud.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/statusHelper.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/createMo.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/doneAndReturn.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/ultraEx.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/soEx.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/etsyButton.js
-// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/init.js
+// DEV BRANCH NOTE: Update the branch segment in @require URLs to the current Codex branch each task.
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/core/constants.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/core/utils.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/core/storage.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/ui/styles.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/ui/toast.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/ui/hud.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/features/statusHelper.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/features/createMo.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/features/doneAndReturn.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/features/ultraEx.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/features/soEx.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/features/etsyButton.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/codex/refactor-userscript-for-dev-and-release/src/init.js
 // ==/UserScript==
 
 (() => {
