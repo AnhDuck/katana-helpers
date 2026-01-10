@@ -168,6 +168,14 @@
       }
       #${constants.IDS.HUD} .kh-hud-text { pointer-events: none; }
       #${constants.IDS.HUD} .kh-hud-total { pointer-events: auto; }
+      #${constants.IDS.MO_TIMER} {
+        pointer-events: auto;
+        cursor: pointer;
+        margin-left: 6px;
+      }
+      #${constants.IDS.MO_TIMER}[data-state="paused"] {
+        opacity: 0.6;
+      }
       #${constants.IDS.HUD} button {
         pointer-events: auto;
         margin-left: 8px;

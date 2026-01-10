@@ -12,6 +12,7 @@
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/styles.js
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/toast.js
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/hud.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/moTimer.js
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/statusHelper.js
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/createMo.js
 // @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/doneAndReturn.js

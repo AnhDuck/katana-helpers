@@ -11,6 +11,7 @@
     IDS: {
       STYLE: "kh-style",
       HUD: "kh-hud",
+      MO_TIMER: "kh-mo-timer",
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
       BTN_STATUS_HELPER: "kh-status-helper-btn",
