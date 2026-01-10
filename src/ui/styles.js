@@ -165,30 +165,109 @@
         transform: translateY(1px) !important;
       }
 
+      #${constants.IDS.WRAP_PO_SUPPLIER} {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin-right: 10px !important;
+      }
       #${constants.IDS.BTN_PO_SUPPLIER} {
         border-radius: 6px !important;
         padding: 6px 12px !important;
-        margin-right: 10px !important;
         font: inherit !important;
         cursor: pointer !important;
         line-height: 1.2 !important;
         white-space: nowrap !important;
         border: 1px solid rgba(0,0,0,0.25) !important;
         font-weight: 700 !important;
+        background: var(--kh-supplier-btn-bg, ${constants.CONFIG.PO_SUPPLIER_BUTTON_BG}) !important;
+        color: var(--kh-supplier-btn-color, ${constants.CONFIG.PO_SUPPLIER_BUTTON_TEXT}) !important;
       }
       #${constants.IDS.BTN_PO_SUPPLIER}:hover { border-color: rgba(0,0,0,0.45) !important; }
       #${constants.IDS.BTN_PO_SUPPLIER}:active { transform: translateY(0.5px) !important; }
-      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_ALI} {
-        background: #f15a24 !important;
-        color: #fff !important;
+      #${constants.IDS.BTN_PO_SUPPLIER}:disabled,
+      #${constants.IDS.BTN_PO_SUPPLIER}[data-kh-disabled="1"] {
+        cursor: not-allowed !important;
+        opacity: 0.65 !important;
+        background: var(--kh-supplier-btn-disabled-bg, ${constants.CONFIG.PO_SUPPLIER_BUTTON_DISABLED_BG}) !important;
+        color: var(--kh-supplier-btn-disabled-color, ${constants.CONFIG.PO_SUPPLIER_BUTTON_DISABLED_TEXT}) !important;
       }
-      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_GRAINGER} {
-        background: #e5e5e5 !important;
-        color: #111 !important;
+
+      #${constants.IDS.BTN_PO_SUPPLIER_EDIT} {
+        border-radius: 6px !important;
+        border: 1px solid rgba(0,0,0,0.25) !important;
+        background: #fff !important;
+        color: #222 !important;
+        cursor: pointer !important;
+        width: 28px !important;
+        height: 28px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font: inherit !important;
+        font-size: 13px !important;
+        line-height: 1 !important;
+        padding: 0 !important;
       }
-      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_AMAZON} {
-        background: #8b5a2b !important;
-        color: #fff !important;
+      #${constants.IDS.BTN_PO_SUPPLIER_EDIT}:hover {
+        border-color: rgba(0,0,0,0.45) !important;
+        background: #f5f5f5 !important;
+      }
+
+      #${constants.IDS.PO_SUPPLIER_MODAL} {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 10002 !important;
+        background: rgba(0,0,0,0.45) !important;
+        display: none;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 16px !important;
+      }
+      #${constants.IDS.PO_SUPPLIER_MODAL}[data-open="1"] {
+        display: flex !important;
+      }
+      .${constants.CLASSES.PO_SUPPLIER_MODAL_CONTENT} {
+        background: #fff !important;
+        border-radius: 12px !important;
+        padding: 16px 18px !important;
+        width: min(420px, 92vw) !important;
+        box-shadow: 0 12px 28px rgba(0,0,0,0.25) !important;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+      }
+      .${constants.CLASSES.PO_SUPPLIER_MODAL_CONTENT} h3 {
+        margin: 0 0 12px 0 !important;
+        font-size: 16px !important;
+      }
+      .${constants.CLASSES.PO_SUPPLIER_MODAL_ROW} {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+        margin-bottom: 12px !important;
+        font-size: 13px !important;
+      }
+      .${constants.CLASSES.PO_SUPPLIER_MODAL_ROW} input {
+        border: 1px solid rgba(0,0,0,0.2) !important;
+        border-radius: 6px !important;
+        padding: 6px 8px !important;
+        font: inherit !important;
+      }
+      .${constants.CLASSES.PO_SUPPLIER_MODAL_ROW} input[type="color"] {
+        padding: 0 !important;
+        width: 48px !important;
+        height: 32px !important;
+      }
+      .${constants.CLASSES.PO_SUPPLIER_MODAL_ACTIONS} {
+        display: flex !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+      }
+      .${constants.CLASSES.PO_SUPPLIER_MODAL_ACTIONS} button {
+        border-radius: 6px !important;
+        border: 1px solid rgba(0,0,0,0.25) !important;
+        padding: 6px 10px !important;
+        font: inherit !important;
+        cursor: pointer !important;
       }
 
       #${constants.IDS.BTN_SIMPLYPRINT_NAV} {

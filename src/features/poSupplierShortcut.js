@@ -1,27 +1,6 @@
 (() => {
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
-  const { constants, utils } = kh;
-
-  const SUPPLIER_CONFIGS = {
-    aliexpress: {
-      text: "AliExpress ↗",
-      title: "Open supplier order page in new window",
-      url: "https://www.aliexpress.com/p/order/index.html",
-      className: constants.CLASSES.PO_SUPPLIER_ALI,
-    },
-    grainger: {
-      text: "Grainger ↗",
-      title: "Open supplier order page in new window",
-      url: "https://www.grainger.ca/en/my-account/list/listDetails/8827617706685",
-      className: constants.CLASSES.PO_SUPPLIER_GRAINGER,
-    },
-    amazon: {
-      text: "Amazon ↗",
-      title: "Open supplier order page in new window",
-      url: "https://www.amazon.ca/gp/your-account/order-history?ref_=ya_d_c_yo",
-      className: constants.CLASSES.PO_SUPPLIER_AMAZON,
-    },
-  };
+  const { constants, utils, storage } = kh;
 
   const SUPPLIER_SELECTORS = [
     'input[name="supplierId"]',
@@ -31,7 +10,6 @@
     'input[aria-label*="Supplier" i]',
   ];
 
-  let lastSupplierKey = null;
   let lastInput = null;
 
   const isPurchaseOrderPage = () => window.location.pathname.startsWith("/purchaseorder/");
@@ -57,19 +35,9 @@
     return null;
   };
 
-  const getSupplierKey = (value) => {
-    const normalized = utils.normText(value);
-    if (!normalized) return null;
-    if (normalized.includes("aliexpress")) return "aliexpress";
-    if (normalized.includes("amazon")) return "amazon";
-    if (normalized.includes("grainger")) return "grainger";
-    return null;
-  };
-
   const removeSupplierButton = () => {
-    const existing = document.getElementById(constants.IDS.BTN_PO_SUPPLIER);
-    if (existing) existing.remove();
-    lastSupplierKey = null;
+    const wrap = document.getElementById(constants.IDS.WRAP_PO_SUPPLIER);
+    if (wrap) wrap.remove();
   };
 
   const handleSupplierInput = () => {
@@ -85,6 +53,109 @@
     lastInput = input;
     input.addEventListener("input", handleSupplierInput);
     input.addEventListener("change", handleSupplierInput);
+  };
+
+  const getSupplierState = (supplierName) => {
+    const trimmed = (supplierName || "").trim();
+    const key = storage.normalizeSupplierName(trimmed);
+    if (!key) return null;
+    const map = storage.readSupplierButtons();
+    const stored = map[key] || {};
+    const label = (stored.label || trimmed).trim() || "Supplier";
+    const url = (stored.url || "").trim();
+    const color = (stored.color || constants.CONFIG.PO_SUPPLIER_BUTTON_BG).trim();
+    return {
+      key,
+      name: trimmed,
+      label,
+      url,
+      color,
+    };
+  };
+
+  const ensureEditModal = () => {
+    let modal = document.getElementById(constants.IDS.PO_SUPPLIER_MODAL);
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = constants.IDS.PO_SUPPLIER_MODAL;
+      modal.className = constants.CLASSES.PO_SUPPLIER_MODAL;
+      document.body.appendChild(modal);
+    }
+    return modal;
+  };
+
+  const closeEditModal = (modal) => {
+    if (!modal) return;
+    modal.removeAttribute("data-open");
+  };
+
+  const openEditModal = (state, onSave) => {
+    const modal = ensureEditModal();
+    modal.innerHTML = "";
+
+    const content = document.createElement("div");
+    content.className = constants.CLASSES.PO_SUPPLIER_MODAL_CONTENT;
+
+    const title = document.createElement("h3");
+    title.textContent = `Edit supplier shortcut`;
+
+    const labelRow = document.createElement("label");
+    labelRow.className = constants.CLASSES.PO_SUPPLIER_MODAL_ROW;
+    labelRow.textContent = "Button label";
+    const labelInput = document.createElement("input");
+    labelInput.type = "text";
+    labelInput.value = state.label;
+    labelRow.appendChild(labelInput);
+
+    const urlRow = document.createElement("label");
+    urlRow.className = constants.CLASSES.PO_SUPPLIER_MODAL_ROW;
+    urlRow.textContent = "Supplier URL";
+    const urlInput = document.createElement("input");
+    urlInput.type = "text";
+    urlInput.placeholder = "https://";
+    urlInput.value = state.url;
+    urlRow.appendChild(urlInput);
+
+    const colorRow = document.createElement("label");
+    colorRow.className = constants.CLASSES.PO_SUPPLIER_MODAL_ROW;
+    colorRow.textContent = "Button color";
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = state.color;
+    colorRow.appendChild(colorInput);
+
+    const actions = document.createElement("div");
+    actions.className = constants.CLASSES.PO_SUPPLIER_MODAL_ACTIONS;
+    const cancelBtn = utils.createButton({
+      text: "Cancel",
+      onClick: (event) => {
+        event.preventDefault();
+        closeEditModal(modal);
+      },
+    });
+    const saveBtn = utils.createButton({
+      text: "Save",
+      onClick: (event) => {
+        event.preventDefault();
+        storage.upsertSupplierButton(state.name, {
+          label: labelInput.value.trim() || state.name,
+          url: urlInput.value.trim(),
+          color: colorInput.value || constants.CONFIG.PO_SUPPLIER_BUTTON_BG,
+        });
+        closeEditModal(modal);
+        if (onSave) onSave();
+      },
+    });
+    actions.append(cancelBtn, saveBtn);
+
+    content.append(title, labelRow, urlRow, colorRow, actions);
+    modal.appendChild(content);
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeEditModal(modal);
+    }, { once: true });
+
+    modal.setAttribute("data-open", "1");
   };
 
   const ensureSupplierShortcutButton = () => {
@@ -126,16 +197,18 @@
     wireSupplierInput(supplierInput);
 
     const supplierValue = supplierInput.value || "";
-    const supplierKey = getSupplierKey(supplierValue);
-    if (!supplierKey) {
+    const state = getSupplierState(supplierValue);
+    if (!state) {
       removeSupplierButton();
       return;
     }
 
-    const config = SUPPLIER_CONFIGS[supplierKey];
-    if (!config) {
-      removeSupplierButton();
-      return;
+    let wrap = document.getElementById(constants.IDS.WRAP_PO_SUPPLIER);
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = constants.IDS.WRAP_PO_SUPPLIER;
+      wrap.className = constants.CLASSES.PO_SUPPLIER_WRAP;
+      parent.insertBefore(wrap, statusBtn);
     }
 
     let btn = document.getElementById(constants.IDS.BTN_PO_SUPPLIER);
@@ -146,29 +219,52 @@
         onClick: (event) => {
           event.preventDefault();
           event.stopPropagation();
-          const currentKey = btn.getAttribute("data-supplier-key") || supplierKey;
-          const currentConfig = SUPPLIER_CONFIGS[currentKey];
-          if (currentConfig) {
-            window.open(currentConfig.url, "_blank", "noopener,noreferrer");
-            kh.ui.hud.incrementCounters(3);
+          const currentSupplier = btn.getAttribute("data-supplier-name") || "";
+          const currentState = getSupplierState(currentSupplier);
+          if (!currentState) return;
+          if (!currentState.url) {
+            openEditModal(currentState, ensureSupplierShortcutButton);
+            return;
           }
+          window.open(currentState.url, "_blank", "noopener,noreferrer");
+          kh.ui.hud.incrementCounters(3);
         },
       });
-      parent.insertBefore(btn, statusBtn);
+      wrap.appendChild(btn);
     }
 
-    if (lastSupplierKey !== supplierKey) {
-      btn.textContent = config.text;
-      btn.title = config.title;
-      btn.classList.remove(
-        constants.CLASSES.PO_SUPPLIER_ALI,
-        constants.CLASSES.PO_SUPPLIER_GRAINGER,
-        constants.CLASSES.PO_SUPPLIER_AMAZON,
-      );
-      btn.classList.add(config.className);
-      btn.setAttribute("data-supplier-key", supplierKey);
-      lastSupplierKey = supplierKey;
+    let editBtn = document.getElementById(constants.IDS.BTN_PO_SUPPLIER_EDIT);
+    if (!editBtn) {
+      editBtn = utils.createButton({
+        id: constants.IDS.BTN_PO_SUPPLIER_EDIT,
+        className: constants.CLASSES.PO_SUPPLIER_EDIT,
+        text: "✎",
+        title: "Edit supplier shortcut",
+        onClick: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const currentSupplier = btn.getAttribute("data-supplier-name") || "";
+          const currentState = getSupplierState(currentSupplier);
+          if (!currentState) return;
+          openEditModal(currentState, ensureSupplierShortcutButton);
+        },
+      });
+      wrap.appendChild(editBtn);
     }
+
+    btn.textContent = state.label;
+    btn.title = state.url
+      ? "Open supplier order page in new window"
+      : "Set a supplier URL to enable";
+    btn.style.setProperty("--kh-supplier-btn-bg", state.color);
+    btn.style.setProperty("--kh-supplier-btn-color", constants.CONFIG.PO_SUPPLIER_BUTTON_TEXT);
+    if (state.url) {
+      btn.removeAttribute("data-kh-disabled");
+    } else {
+      btn.setAttribute("data-kh-disabled", "1");
+    }
+    btn.setAttribute("data-supplier-key", state.key);
+    btn.setAttribute("data-supplier-name", state.name);
   };
 
   kh.features = kh.features || {};
