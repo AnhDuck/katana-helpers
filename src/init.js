@@ -11,6 +11,7 @@
     lastRun = now;
 
     kh.ui.hud.ensureHud();
+    kh.ui.moTimer.ensureMoTimer();
     kh.features.createMo.ensureCreateMoButton();
     kh.features.statusHelper.ensureEntityStatusHelper();
     kh.features.doneAndReturn.ensureMoDoneReturnButton();
