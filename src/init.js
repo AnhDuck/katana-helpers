@@ -17,6 +17,7 @@
     kh.features.doneAndReturn.ensureMoDoneReturnButton();
     kh.features.soEx.ensureSoExButtons();
     kh.features.etsyButton.ensureEtsyOrderButton();
+    kh.features.poSupplierShortcut.ensureSupplierShortcutButton();
   };
 
   const scheduleEnsure = () => {

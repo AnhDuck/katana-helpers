@@ -20,11 +20,15 @@
       WRAP_MO_DONE_RETURN: "kh-mo-done-return-wrap",
       BTN_ETSY_ORDER: "kh-etsy-order-btn",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",
+      BTN_PO_SUPPLIER: "kh-po-supplier-btn",
     },
     CLASSES: {
       LABEL_MO_DONE_RETURN: "kh-mo-done-return-label",
       BTN_SO_EX: "kh-so-ex-btn",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",
+      PO_SUPPLIER_BTN: "kh-po-supplier-btn",
+      PO_SUPPLIER_ALI: "kh-po-supplier-aliexpress",
+      PO_SUPPLIER_GRAINGER: "kh-po-supplier-grainger",
     },
     SELECTORS: {
       CREATE_BTN: 'button[data-testid="globalAddButton"]',

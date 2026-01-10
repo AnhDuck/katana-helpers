@@ -29,6 +29,7 @@
     "src/features/ultraEx.js",
     "src/features/soEx.js",
     "src/features/etsyButton.js",
+    "src/features/poSupplierShortcut.js",
     "src/init.js",
   ];
 

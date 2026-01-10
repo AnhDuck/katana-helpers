@@ -150,6 +150,28 @@
         transform: translateY(1px) !important;
       }
 
+      #${constants.IDS.BTN_PO_SUPPLIER} {
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        margin-right: 10px !important;
+        font: inherit !important;
+        cursor: pointer !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+        border: 1px solid rgba(0,0,0,0.25) !important;
+        font-weight: 700 !important;
+      }
+      #${constants.IDS.BTN_PO_SUPPLIER}:hover { border-color: rgba(0,0,0,0.45) !important; }
+      #${constants.IDS.BTN_PO_SUPPLIER}:active { transform: translateY(0.5px) !important; }
+      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_ALI} {
+        background: #f59e0b !important;
+        color: #fff !important;
+      }
+      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_GRAINGER} {
+        background: #e5e5e5 !important;
+        color: #111 !important;
+      }
+
       #${constants.IDS.HUD} {
         position: fixed;
         left: 50%;
