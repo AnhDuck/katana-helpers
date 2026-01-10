@@ -10,10 +10,12 @@
   };
 
   let lastStatusState = null;
+  let lastStatusMode = null;
   let devWarned = false;
   let unloadBound = false;
 
   const isManufacturingOrderPage = () => window.location.pathname.startsWith("/manufacturingorder/");
+  const isSalesOrderPage = () => window.location.pathname.startsWith("/salesorder/");
 
   const isDevMode = () => Boolean(document.getElementById("kh-dev-banner"));
 
@@ -118,7 +120,7 @@
     }
   };
 
-  const ensureTimerElement = () => {
+  const ensureTimerElement = (label) => {
     const hud = document.getElementById(constants.IDS.HUD);
     if (!hud) return null;
     const todayEl = hud.querySelector("#kh-today");
@@ -129,10 +131,15 @@
       timerEl = document.createElement("span");
       timerEl.id = constants.IDS.MO_TIMER;
       timerEl.dataset.state = TIMER_STATE.state;
-      timerEl.innerHTML = " | MO Timer: <strong>0:00</strong>";
-      timerEl.title = "MO Timer: click to pause/resume. Shift+click to reset & start.";
+      timerEl.dataset.label = label;
+      timerEl.innerHTML = ` | ${label}: <strong>0:00</strong>`;
+      timerEl.title = `${label}: click to pause/resume. Shift+click to reset & start.`;
       timerEl.addEventListener("click", onTimerClick, { capture: true });
       todayEl.insertAdjacentElement("afterend", timerEl);
+    } else if (timerEl.dataset.label !== label) {
+      timerEl.dataset.label = label;
+      timerEl.innerHTML = ` | ${label}: <strong>${formatElapsed(getElapsedMs())}</strong>`;
+      timerEl.title = `${label}: click to pause/resume. Shift+click to reset & start.`;
     }
     return timerEl;
   };
@@ -141,10 +148,11 @@
     removeTimerElement();
     resetTimerState();
     lastStatusState = null;
+    lastStatusMode = null;
   };
 
   const ensureMoTimer = () => {
-    if (!isManufacturingOrderPage()) {
+    if (!isManufacturingOrderPage() && !isSalesOrderPage()) {
       cleanupTimer();
       return;
     }
@@ -155,16 +163,30 @@
     if (typeof getCtx !== "function") return;
 
     const ctx = getCtx();
-    const eligible = ctx.mode === "manufacturing" && (ctx.state === "notStarted" || ctx.state === "done");
+    const isManufacturing = ctx.mode === "manufacturing";
+    const isSales = ctx.mode === "sales";
+    const config = isManufacturing
+      ? { label: "MO Timer", startState: "notStarted", stopState: "done" }
+      : isSales
+        ? { label: "SO Timer", startState: "notShipped", stopState: "packed" }
+        : null;
+    const eligible = config ? (ctx.state === config.startState || ctx.state === config.stopState) : false;
 
     if (!eligible) {
       removeTimerElement();
       resetTimerState();
       lastStatusState = null;
+      lastStatusMode = null;
       return;
     }
 
-    const timerEl = ensureTimerElement();
+    const modeChanged = lastStatusMode && lastStatusMode !== ctx.mode;
+    if (modeChanged) {
+      resetTimerState();
+      lastStatusState = null;
+    }
+
+    const timerEl = ensureTimerElement(config.label);
     if (!timerEl) {
       if (TIMER_STATE.state === "running") pauseTimer();
       return;
@@ -173,13 +195,14 @@
     if (TIMER_STATE.state === "idle") startTimer();
 
     if (lastStatusState && lastStatusState !== ctx.state) {
-      if (ctx.state === "done") pauseTimer();
-      if (ctx.state === "notStarted") startTimer();
-    } else if (!lastStatusState && ctx.state === "done" && TIMER_STATE.state === "running") {
+      if (ctx.state === config.stopState) pauseTimer();
+      if (ctx.state === config.startState) startTimer();
+    } else if (!lastStatusState && ctx.state === config.stopState && TIMER_STATE.state === "running") {
       pauseTimer();
     }
 
     lastStatusState = ctx.state;
+    lastStatusMode = ctx.mode;
     updateTimerDisplay();
 
     if (!unloadBound) {
@@ -192,5 +215,6 @@
   kh.ui.moTimer = {
     ensureMoTimer,
     isManufacturingOrderPage,
+    isSalesOrderPage,
   };
 })();
