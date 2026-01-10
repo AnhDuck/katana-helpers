@@ -45,9 +45,22 @@
     doc.documentElement.appendChild(banner);
   };
 
-  const getRawBase = () => {
+  const findLoaderUrl = () => {
     const requires = GM_info?.script?.requires || [];
-    const loaderUrl = requires.find((url) => url.includes(LOADER_FILENAME)) || "";
+    const direct = requires.find((url) => url.includes(LOADER_FILENAME));
+    if (direct) return direct;
+
+    const meta = GM_info?.scriptMetaStr || "";
+    if (!meta) return "";
+    const lines = meta.split(/\r?\n/);
+    const requireLine = lines.find((line) => line.includes("@require") && line.includes(LOADER_FILENAME));
+    if (!requireLine) return "";
+    const match = requireLine.match(/@require\s+(\S+)/);
+    return match ? match[1] : "";
+  };
+
+  const getRawBase = () => {
+    const loaderUrl = findLoaderUrl();
     if (!loaderUrl) return "";
     return loaderUrl.replace(/\/[^/]+$/, "");
   };
