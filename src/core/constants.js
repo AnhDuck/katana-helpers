@@ -38,6 +38,7 @@
       PO_SUPPLIER_MODAL: "kh-po-supplier-modal",
       PO_SUPPLIER_MODAL_CONTENT: "kh-po-supplier-modal-content",
       PO_SUPPLIER_MODAL_ROW: "kh-po-supplier-modal-row",
+      PO_SUPPLIER_MODAL_WARNING: "kh-po-supplier-modal-warning",
       PO_SUPPLIER_MODAL_ACTIONS: "kh-po-supplier-modal-actions",
       SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
     },

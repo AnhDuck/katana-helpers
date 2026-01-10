@@ -11,8 +11,8 @@
   ];
 
   let lastInput = null;
-  let isEditingSupplier = false;
-  let activePreviewState = null;
+  let activePreviewLabel = null;
+  let activePreviewSupplierKey = null;
 
   const isPurchaseOrderPage = () => window.location.pathname.startsWith("/purchaseorder/");
 
@@ -94,8 +94,8 @@
   const openEditModal = (state, { onSave, onPreview } = {}) => {
     const modal = ensureEditModal();
     modal.innerHTML = "";
-    isEditingSupplier = true;
-    activePreviewState = { ...state };
+    activePreviewLabel = state.label;
+    activePreviewSupplierKey = state.key;
 
     const content = document.createElement("div");
     content.className = constants.CLASSES.PO_SUPPLIER_MODAL_CONTENT;
@@ -137,10 +137,18 @@
 
     const handlePreviewUpdate = () => {
       const nextState = buildNextState();
-      activePreviewState = nextState;
+      activePreviewLabel = nextState.label;
       if (!onPreview) return;
-      onPreview(nextState);
+      onPreview({
+        ...state,
+        label: nextState.label,
+        url: nextState.url,
+      });
     };
+
+    const warning = document.createElement("p");
+    warning.className = constants.CLASSES.PO_SUPPLIER_MODAL_WARNING;
+    warning.textContent = "Warning: Clicking Save will refresh the page.";
 
     const actions = document.createElement("div");
     actions.className = constants.CLASSES.PO_SUPPLIER_MODAL_ACTIONS;
@@ -148,8 +156,8 @@
       text: "Cancel",
       onClick: (event) => {
         event.preventDefault();
-        activePreviewState = null;
-        isEditingSupplier = false;
+        activePreviewLabel = null;
+        activePreviewSupplierKey = null;
         closeEditModal(modal);
       },
     });
@@ -164,28 +172,32 @@
           color: nextState.color,
         });
         if (onPreview) onPreview(nextState);
-        activePreviewState = null;
-        isEditingSupplier = false;
+        activePreviewLabel = null;
+        activePreviewSupplierKey = null;
         closeEditModal(modal);
         if (onSave) onSave(nextState);
+        window.location.reload();
       },
     });
     actions.append(cancelBtn, saveBtn);
 
-    content.append(title, labelRow, urlRow, colorRow, actions);
+    content.append(title, labelRow, urlRow, colorRow, warning, actions);
     modal.appendChild(content);
 
     labelInput.addEventListener("input", handlePreviewUpdate);
     urlInput.addEventListener("input", handlePreviewUpdate);
-    colorInput.addEventListener("input", handlePreviewUpdate);
-    colorInput.addEventListener("change", handlePreviewUpdate);
 
     modal.addEventListener("click", (event) => {
       if (event.target !== modal) return;
-      activePreviewState = null;
-      isEditingSupplier = false;
+      activePreviewLabel = null;
+      activePreviewSupplierKey = null;
       closeEditModal(modal);
     }, { once: true });
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === colorInput) return;
+      if (document.activeElement === colorInput) colorInput.blur();
+    });
 
     modal.setAttribute("data-open", "1");
   };
@@ -198,8 +210,6 @@
       : "Set a supplier URL to enable";
     btn.style.setProperty("--kh-supplier-btn-bg", state.color);
     btn.style.setProperty("--kh-supplier-btn-color", constants.CONFIG.PO_SUPPLIER_BUTTON_TEXT);
-    btn.style.setProperty("--kh-supplier-btn-disabled-bg", state.color);
-    btn.style.setProperty("--kh-supplier-btn-disabled-color", constants.CONFIG.PO_SUPPLIER_BUTTON_TEXT);
     if (state.url) {
       btn.removeAttribute("data-kh-disabled");
     } else {
@@ -309,10 +319,9 @@
       wrap.appendChild(editBtn);
     }
 
-    if (isEditingSupplier && activePreviewState && activePreviewState.key === state.key) {
-      applySupplierState(btn, activePreviewState);
-    } else {
-      applySupplierState(btn, state);
+    applySupplierState(btn, state);
+    if (activePreviewSupplierKey && activePreviewSupplierKey === state.key && activePreviewLabel !== null) {
+      btn.textContent = activePreviewLabel;
     }
   };
 

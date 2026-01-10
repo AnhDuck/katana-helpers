@@ -257,6 +257,11 @@
         width: 48px !important;
         height: 32px !important;
       }
+      .${constants.CLASSES.PO_SUPPLIER_MODAL_WARNING} {
+        margin: 0 0 12px 0 !important;
+        font-size: 12px !important;
+        color: #b00020 !important;
+      }
       .${constants.CLASSES.PO_SUPPLIER_MODAL_ACTIONS} {
         display: flex !important;
         justify-content: flex-end !important;
