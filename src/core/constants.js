@@ -15,6 +15,7 @@
       MO_TIMER: "kh-mo-timer",
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
+      BTN_CREATE_PO: "kh-create-po-btn",
       BTN_STATUS_HELPER: "kh-status-helper-btn",
       BTN_MO_DONE_RETURN: "kh-mo-done-return-btn",
       WRAP_MO_DONE_RETURN: "kh-mo-done-return-wrap",
@@ -33,6 +34,7 @@
     SELECTORS: {
       CREATE_BTN: 'button[data-testid="globalAddButton"]',
       MO_ITEM: 'a[data-testid="globalAddManufacturing"]',
+      PO_ITEM: 'a[data-testid="globalAddPurchase"]',
       ENTITY_STATUS_BTN: 'button[data-testid="menuButton-entityStatus"]',
       MO_STATUS_DONE_ITEM: 'li[data-testid="menuListItem-entityStatus-done"]',
       SO_STATUS_PACK_ALL_ITEM: 'li[data-testid="menuListItem-entityStatus-packAll"]',

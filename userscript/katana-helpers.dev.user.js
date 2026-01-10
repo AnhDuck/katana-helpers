@@ -25,6 +25,7 @@
     "src/ui/moTimer.js",
     "src/features/statusHelper.js",
     "src/features/createMo.js",
+    "src/features/createPo.js",
     "src/features/doneAndReturn.js",
     "src/features/ultraEx.js",
     "src/features/soEx.js",

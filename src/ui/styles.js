@@ -23,6 +23,21 @@
       #${constants.IDS.BTN_CREATE_MO}:hover { border-color: rgba(255,255,255,0.45) !important; }
       #${constants.IDS.BTN_CREATE_MO}:active { transform: translateY(0.5px) !important; }
 
+      #${constants.IDS.BTN_CREATE_PO} {
+        background: #cd00f1 !important;
+        color: #fff !important;
+        border: 1px solid rgba(255,255,255,0.25) !important;
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        margin-right: 10px !important;
+        font: inherit !important;
+        cursor: pointer !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+      }
+      #${constants.IDS.BTN_CREATE_PO}:hover { border-color: rgba(255,255,255,0.45) !important; }
+      #${constants.IDS.BTN_CREATE_PO}:active { transform: translateY(0.5px) !important; }
+
       #${constants.IDS.BTN_STATUS_HELPER} {
         border-radius: 6px !important;
         padding: 6px 12px !important;
@@ -164,7 +179,7 @@
       #${constants.IDS.BTN_PO_SUPPLIER}:hover { border-color: rgba(0,0,0,0.45) !important; }
       #${constants.IDS.BTN_PO_SUPPLIER}:active { transform: translateY(0.5px) !important; }
       #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_ALI} {
-        background: #f59e0b !important;
+        background: #f15a24 !important;
         color: #fff !important;
       }
       #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_GRAINGER} {

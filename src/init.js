@@ -13,6 +13,7 @@
     kh.ui.hud.ensureHud();
     kh.ui.moTimer.ensureMoTimer();
     kh.features.createMo.ensureCreateMoButton();
+    kh.features.createPo.ensureCreatePoButton();
     kh.features.statusHelper.ensureEntityStatusHelper();
     kh.features.doneAndReturn.ensureMoDoneReturnButton();
     kh.features.soEx.ensureSoExButtons();
