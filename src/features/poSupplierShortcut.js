@@ -155,6 +155,7 @@
           url: nextState.url,
           color: nextState.color,
         });
+        if (onPreview) onPreview(nextState);
         closeEditModal(modal);
         if (onSave) onSave(nextState);
       },
@@ -167,6 +168,7 @@
     labelInput.addEventListener("input", handlePreviewUpdate);
     urlInput.addEventListener("input", handlePreviewUpdate);
     colorInput.addEventListener("input", handlePreviewUpdate);
+    colorInput.addEventListener("change", handlePreviewUpdate);
 
     modal.addEventListener("click", (event) => {
       if (event.target === modal) closeEditModal(modal);
