@@ -113,6 +113,12 @@
     }
   };
 
+  const onTimerHover = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    kh.ui?.toast?.showToast?.("MO Timer: click to pause/resume • Shift+click to reset & start", 3600);
+  };
+
   const ensureTimerElement = () => {
     const hud = document.getElementById(constants.IDS.HUD);
     if (!hud) return null;
@@ -126,6 +132,7 @@
       timerEl.dataset.state = TIMER_STATE.state;
       timerEl.textContent = " | MO Timer: 0:00";
       timerEl.addEventListener("click", onTimerClick, { capture: true });
+      timerEl.addEventListener("mouseenter", onTimerHover, { capture: true });
       todayEl.insertAdjacentElement("afterend", timerEl);
     }
     return timerEl;
