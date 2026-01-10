@@ -13,6 +13,7 @@
   let lastStatusMode = null;
   let activeMode = null;
   let activeSoId = null;
+  let lastUrl = window.location.href;
   let devWarned = false;
   let unloadBound = false;
   let soStoreMem = { activeId: null, timers: {} };
@@ -27,16 +28,10 @@
     return match ? match[1] : null;
   };
 
-  const getReferrerSalesOrderId = () => {
-    if (!document.referrer) return null;
-    try {
-      const ref = new URL(document.referrer);
-      if (ref.origin !== window.location.origin) return null;
-      const match = ref.pathname.match(/^\/salesorder\/(\d+)/);
-      return match ? match[1] : null;
-    } catch {
-      return null;
-    }
+  const getSalesOrderIdFromPath = (pathname) => {
+    if (!pathname) return null;
+    const match = pathname.match(/^\/salesorder\/(\d+)/);
+    return match ? match[1] : null;
   };
 
   const readSoTimerStore = () => {
@@ -274,7 +269,6 @@
     const isSoPage = isSalesOrderPage();
 
     const store = readSoTimerStore();
-    const refSoId = getReferrerSalesOrderId();
     let storeChanged = false;
 
     const pauseSoEntry = (entry, autoResume) => {
@@ -289,22 +283,28 @@
       storeChanged = true;
     };
 
-    if (refSoId && store.timers?.[refSoId]) {
-      const refEntry = store.timers[refSoId];
-      if (isSoPage) {
-        const currentSoId = getSalesOrderId();
-        if (currentSoId && currentSoId !== refSoId) {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl) {
+      const prevPath = new URL(lastUrl, window.location.origin).pathname;
+      const prevSoId = getSalesOrderIdFromPath(prevPath);
+      const nextPath = window.location.pathname;
+      const nextIsMo = nextPath.startsWith("/manufacturingorder/");
+      const nextSoId = getSalesOrderIdFromPath(nextPath);
+
+      if (prevSoId && prevSoId !== nextSoId) {
+        const refEntry = ensureSoEntry(store, prevSoId);
+        if (nextIsMo) {
+          refEntry.carryOver = true;
+          refEntry.autoResume = false;
+          refEntry.updatedAt = Date.now();
+          store.activeId = prevSoId;
+          storeChanged = true;
+        } else {
           pauseSoEntry(refEntry, true);
         }
-      } else if (isMoPage) {
-        refEntry.carryOver = true;
-        refEntry.autoResume = false;
-        refEntry.updatedAt = Date.now();
-        store.activeId = refSoId;
-        storeChanged = true;
-      } else {
-        pauseSoEntry(refEntry, true);
       }
+
+      lastUrl = currentUrl;
     }
 
     if (!isMoPage && !isSoPage && store.activeId) {
