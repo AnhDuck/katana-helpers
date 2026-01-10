@@ -116,7 +116,7 @@
   const onTimerHover = (event) => {
     event.preventDefault();
     event.stopPropagation();
-    kh.ui?.toast?.showToast?.("MO Timer: click to pause/resume • Shift+click to reset & start", 3600);
+    kh.ui?.toast?.showToast?.("MO Timer: click to pause/resume • Shift+click to reset & start", 1000);
   };
 
   const ensureTimerElement = () => {
