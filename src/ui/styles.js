@@ -23,6 +23,21 @@
       #${constants.IDS.BTN_CREATE_MO}:hover { border-color: rgba(255,255,255,0.45) !important; }
       #${constants.IDS.BTN_CREATE_MO}:active { transform: translateY(0.5px) !important; }
 
+      #${constants.IDS.BTN_CREATE_PO} {
+        background: #cd00f1 !important;
+        color: #fff !important;
+        border: 1px solid rgba(255,255,255,0.25) !important;
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        margin-right: 10px !important;
+        font: inherit !important;
+        cursor: pointer !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+      }
+      #${constants.IDS.BTN_CREATE_PO}:hover { border-color: rgba(255,255,255,0.45) !important; }
+      #${constants.IDS.BTN_CREATE_PO}:active { transform: translateY(0.5px) !important; }
+
       #${constants.IDS.BTN_STATUS_HELPER} {
         border-radius: 6px !important;
         padding: 6px 12px !important;
@@ -148,6 +163,49 @@
         background: #d4571f !important;
         box-shadow: inset 0 1px 2px rgba(0,0,0,0.25) !important;
         transform: translateY(1px) !important;
+      }
+
+      #${constants.IDS.BTN_PO_SUPPLIER} {
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        margin-right: 10px !important;
+        font: inherit !important;
+        cursor: pointer !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+        border: 1px solid rgba(0,0,0,0.25) !important;
+        font-weight: 700 !important;
+      }
+      #${constants.IDS.BTN_PO_SUPPLIER}:hover { border-color: rgba(0,0,0,0.45) !important; }
+      #${constants.IDS.BTN_PO_SUPPLIER}:active { transform: translateY(0.5px) !important; }
+      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_ALI} {
+        background: #f15a24 !important;
+        color: #fff !important;
+      }
+      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_GRAINGER} {
+        background: #e5e5e5 !important;
+        color: #111 !important;
+      }
+      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_AMAZON} {
+        background: #8b5a2b !important;
+        color: #fff !important;
+      }
+
+      #${constants.IDS.BTN_SIMPLYPRINT_NAV} {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      #${constants.IDS.BTN_SIMPLYPRINT_NAV}.${constants.CLASSES.SIMPLYPRINT_NAV} .kh-simplyprint-label {
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 4px !important;
+      }
+      #${constants.IDS.BTN_SIMPLYPRINT_NAV}.${constants.CLASSES.SIMPLYPRINT_NAV} .kh-simplyprint-icon {
+        width: 18px !important;
+        height: 18px !important;
+        display: inline-block !important;
       }
 
       #${constants.IDS.HUD} {
