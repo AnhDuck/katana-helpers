@@ -6,46 +6,18 @@
 // @match        https://factory.katanamrp.com/*
 // @run-at       document-idle
 // @grant        none
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/core/constants.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/core/utils.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/core/storage.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/styles.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/toast.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/hud.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/ui/moTimer.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/statusHelper.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/createMo.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/doneAndReturn.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/ultraEx.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/soEx.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/features/etsyButton.js
+// @require      https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/src/init.js
 // ==/UserScript==
-
-(() => {
-  const RELEASE_BASE_URL = "https://raw.githubusercontent.com/AnhDuck/katana-helpers/main";
-
-  const modulePaths = [
-    "src/core/constants.js",
-    "src/core/utils.js",
-    "src/core/storage.js",
-    "src/ui/styles.js",
-    "src/ui/toast.js",
-    "src/ui/hud.js",
-    "src/ui/moTimer.js",
-    "src/features/statusHelper.js",
-    "src/features/createMo.js",
-    "src/features/doneAndReturn.js",
-    "src/features/ultraEx.js",
-    "src/features/soEx.js",
-    "src/features/etsyButton.js",
-    "src/init.js",
-  ];
-
-  const loadScript = (src) => new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = false;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.head.appendChild(script);
-  });
-
-  const loadAll = async () => {
-    for (const path of modulePaths) {
-      const ok = await loadScript(`${RELEASE_BASE_URL}/${path}`);
-      if (!ok) {
-        console.warn(`%cKatana Helpers loader: failed to load ${path}`, "color: red; font-weight: bold;");
-        break;
-      }
-    }
-  };
-
-  loadAll();
-})();

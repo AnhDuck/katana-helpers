@@ -1,3 +1,3 @@
 # Agent instructions
 
-- When starting a new Codex task/branch in this repo, update the `DEV_BRANCH_URL` value near the top of `userscript/katana-helpers.dev.user.js` to the GitHub branch URL for that task.
+- When starting a new Codex task/branch in this repo, update the single @require line in `userscript/katana-helpers.dev.user.js` to the raw GitHub URL for `katana-helpers.dev.loader.js` on that branch.
