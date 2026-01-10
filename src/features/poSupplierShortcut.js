@@ -11,6 +11,8 @@
   ];
 
   let lastInput = null;
+  let isEditingSupplier = false;
+  let activePreviewState = null;
 
   const isPurchaseOrderPage = () => window.location.pathname.startsWith("/purchaseorder/");
 
@@ -92,6 +94,8 @@
   const openEditModal = (state, { onSave, onPreview } = {}) => {
     const modal = ensureEditModal();
     modal.innerHTML = "";
+    isEditingSupplier = true;
+    activePreviewState = { ...state };
 
     const content = document.createElement("div");
     content.className = constants.CLASSES.PO_SUPPLIER_MODAL_CONTENT;
@@ -132,8 +136,10 @@
     });
 
     const handlePreviewUpdate = () => {
+      const nextState = buildNextState();
+      activePreviewState = nextState;
       if (!onPreview) return;
-      onPreview(buildNextState());
+      onPreview(nextState);
     };
 
     const actions = document.createElement("div");
@@ -142,6 +148,8 @@
       text: "Cancel",
       onClick: (event) => {
         event.preventDefault();
+        activePreviewState = null;
+        isEditingSupplier = false;
         closeEditModal(modal);
       },
     });
@@ -156,6 +164,8 @@
           color: nextState.color,
         });
         if (onPreview) onPreview(nextState);
+        activePreviewState = null;
+        isEditingSupplier = false;
         closeEditModal(modal);
         if (onSave) onSave(nextState);
       },
@@ -171,7 +181,10 @@
     colorInput.addEventListener("change", handlePreviewUpdate);
 
     modal.addEventListener("click", (event) => {
-      if (event.target === modal) closeEditModal(modal);
+      if (event.target !== modal) return;
+      activePreviewState = null;
+      isEditingSupplier = false;
+      closeEditModal(modal);
     }, { once: true });
 
     modal.setAttribute("data-open", "1");
@@ -185,6 +198,8 @@
       : "Set a supplier URL to enable";
     btn.style.setProperty("--kh-supplier-btn-bg", state.color);
     btn.style.setProperty("--kh-supplier-btn-color", constants.CONFIG.PO_SUPPLIER_BUTTON_TEXT);
+    btn.style.setProperty("--kh-supplier-btn-disabled-bg", state.color);
+    btn.style.setProperty("--kh-supplier-btn-disabled-color", constants.CONFIG.PO_SUPPLIER_BUTTON_TEXT);
     if (state.url) {
       btn.removeAttribute("data-kh-disabled");
     } else {
@@ -294,7 +309,11 @@
       wrap.appendChild(editBtn);
     }
 
-    applySupplierState(btn, state);
+    if (isEditingSupplier && activePreviewState && activePreviewState.key === state.key) {
+      applySupplierState(btn, activePreviewState);
+    } else {
+      applySupplierState(btn, state);
+    }
   };
 
   kh.features = kh.features || {};
