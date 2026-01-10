@@ -186,6 +186,10 @@
         background: #e5e5e5 !important;
         color: #111 !important;
       }
+      #${constants.IDS.BTN_PO_SUPPLIER}.${constants.CLASSES.PO_SUPPLIER_AMAZON} {
+        background: #8b5a2b !important;
+        color: #fff !important;
+      }
 
       #${constants.IDS.HUD} {
         position: fixed;

@@ -15,6 +15,12 @@
       url: "https://www.grainger.ca/en/my-account/list/listDetails/8827617706685",
       className: constants.CLASSES.PO_SUPPLIER_GRAINGER,
     },
+    amazon: {
+      text: "Amazon ↗",
+      title: "Open supplier order page in new window",
+      url: "https://www.amazon.ca/gp/your-account/order-history?ref_=ya_d_c_yo",
+      className: constants.CLASSES.PO_SUPPLIER_AMAZON,
+    },
   };
 
   const SUPPLIER_SELECTORS = [
@@ -55,6 +61,7 @@
     const normalized = utils.normText(value);
     if (!normalized) return null;
     if (normalized.includes("aliexpress")) return "aliexpress";
+    if (normalized.includes("amazon")) return "amazon";
     if (normalized.includes("grainger")) return "grainger";
     return null;
   };
@@ -153,7 +160,11 @@
     if (lastSupplierKey !== supplierKey) {
       btn.textContent = config.text;
       btn.title = config.title;
-      btn.classList.remove(constants.CLASSES.PO_SUPPLIER_ALI, constants.CLASSES.PO_SUPPLIER_GRAINGER);
+      btn.classList.remove(
+        constants.CLASSES.PO_SUPPLIER_ALI,
+        constants.CLASSES.PO_SUPPLIER_GRAINGER,
+        constants.CLASSES.PO_SUPPLIER_AMAZON,
+      );
       btn.classList.add(config.className);
       btn.setAttribute("data-supplier-key", supplierKey);
       lastSupplierKey = supplierKey;

@@ -30,6 +30,7 @@
       PO_SUPPLIER_BTN: "kh-po-supplier-btn",
       PO_SUPPLIER_ALI: "kh-po-supplier-aliexpress",
       PO_SUPPLIER_GRAINGER: "kh-po-supplier-grainger",
+      PO_SUPPLIER_AMAZON: "kh-po-supplier-amazon",
     },
     SELECTORS: {
       CREATE_BTN: 'button[data-testid="globalAddButton"]',
