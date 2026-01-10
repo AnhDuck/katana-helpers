@@ -89,7 +89,7 @@
     modal.removeAttribute("data-open");
   };
 
-  const openEditModal = (state, onSave) => {
+  const openEditModal = (state, { onSave, onPreview } = {}) => {
     const modal = ensureEditModal();
     modal.innerHTML = "";
 
@@ -124,6 +124,18 @@
     colorInput.value = state.color;
     colorRow.appendChild(colorInput);
 
+    const buildNextState = () => ({
+      ...state,
+      label: labelInput.value.trim() || state.name,
+      url: urlInput.value.trim(),
+      color: colorInput.value || constants.CONFIG.PO_SUPPLIER_BUTTON_BG,
+    });
+
+    const handlePreviewUpdate = () => {
+      if (!onPreview) return;
+      onPreview(buildNextState());
+    };
+
     const actions = document.createElement("div");
     actions.className = constants.CLASSES.PO_SUPPLIER_MODAL_ACTIONS;
     const cancelBtn = utils.createButton({
@@ -137,13 +149,14 @@
       text: "Save",
       onClick: (event) => {
         event.preventDefault();
+        const nextState = buildNextState();
         storage.upsertSupplierButton(state.name, {
-          label: labelInput.value.trim() || state.name,
-          url: urlInput.value.trim(),
-          color: colorInput.value || constants.CONFIG.PO_SUPPLIER_BUTTON_BG,
+          label: nextState.label,
+          url: nextState.url,
+          color: nextState.color,
         });
         closeEditModal(modal);
-        if (onSave) onSave();
+        if (onSave) onSave(nextState);
       },
     });
     actions.append(cancelBtn, saveBtn);
@@ -151,11 +164,32 @@
     content.append(title, labelRow, urlRow, colorRow, actions);
     modal.appendChild(content);
 
+    labelInput.addEventListener("input", handlePreviewUpdate);
+    urlInput.addEventListener("input", handlePreviewUpdate);
+    colorInput.addEventListener("input", handlePreviewUpdate);
+
     modal.addEventListener("click", (event) => {
       if (event.target === modal) closeEditModal(modal);
     }, { once: true });
 
     modal.setAttribute("data-open", "1");
+  };
+
+  const applySupplierState = (btn, state) => {
+    if (!btn || !state) return;
+    btn.textContent = state.label;
+    btn.title = state.url
+      ? "Open supplier order page in new window"
+      : "Set a supplier URL to enable";
+    btn.style.setProperty("--kh-supplier-btn-bg", state.color);
+    btn.style.setProperty("--kh-supplier-btn-color", constants.CONFIG.PO_SUPPLIER_BUTTON_TEXT);
+    if (state.url) {
+      btn.removeAttribute("data-kh-disabled");
+    } else {
+      btn.setAttribute("data-kh-disabled", "1");
+    }
+    btn.setAttribute("data-supplier-key", state.key);
+    btn.setAttribute("data-supplier-name", state.name);
   };
 
   const ensureSupplierShortcutButton = () => {
@@ -223,7 +257,10 @@
           const currentState = getSupplierState(currentSupplier);
           if (!currentState) return;
           if (!currentState.url) {
-            openEditModal(currentState, ensureSupplierShortcutButton);
+            openEditModal(currentState, {
+              onSave: ensureSupplierShortcutButton,
+              onPreview: (nextState) => applySupplierState(btn, nextState),
+            });
             return;
           }
           window.open(currentState.url, "_blank", "noopener,noreferrer");
@@ -246,25 +283,16 @@
           const currentSupplier = btn.getAttribute("data-supplier-name") || "";
           const currentState = getSupplierState(currentSupplier);
           if (!currentState) return;
-          openEditModal(currentState, ensureSupplierShortcutButton);
+          openEditModal(currentState, {
+            onSave: ensureSupplierShortcutButton,
+            onPreview: (nextState) => applySupplierState(btn, nextState),
+          });
         },
       });
       wrap.appendChild(editBtn);
     }
 
-    btn.textContent = state.label;
-    btn.title = state.url
-      ? "Open supplier order page in new window"
-      : "Set a supplier URL to enable";
-    btn.style.setProperty("--kh-supplier-btn-bg", state.color);
-    btn.style.setProperty("--kh-supplier-btn-color", constants.CONFIG.PO_SUPPLIER_BUTTON_TEXT);
-    if (state.url) {
-      btn.removeAttribute("data-kh-disabled");
-    } else {
-      btn.setAttribute("data-kh-disabled", "1");
-    }
-    btn.setAttribute("data-supplier-key", state.key);
-    btn.setAttribute("data-supplier-name", state.name);
+    applySupplierState(btn, state);
   };
 
   kh.features = kh.features || {};
