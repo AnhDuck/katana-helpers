@@ -36,6 +36,7 @@
   const init = () => {
     ensureAll();
     initObserver();
+    window.addEventListener("resize", scheduleEnsure);
   };
 
   init();

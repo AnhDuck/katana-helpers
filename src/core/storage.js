@@ -14,7 +14,7 @@
   };
 
   const HAS_STORAGE = storageAvailable();
-  let mem = { total: 0, byDate: {} };
+  let mem = { total: 0, byDate: {}, supplierButtons: {} };
 
   const readTotal = () => {
     if (!HAS_STORAGE) return mem.total;
@@ -49,6 +49,38 @@
   const getTodayCount = (map, ymd) => {
     const value = map?.[ymd];
     return Number.isFinite(value) ? value : 0;
+  };
+
+  const normalizeSupplierName = (name) => utils.normText(name || "");
+
+  const readSupplierButtons = () => {
+    if (!HAS_STORAGE) return mem.supplierButtons;
+    const raw = localStorage.getItem(constants.KEYS.SUPPLIER_BUTTONS);
+    const obj = utils.safeJsonParse(raw || "{}", {});
+    return obj && typeof obj === "object" ? obj : {};
+  };
+
+  const writeSupplierButtons = (map) => {
+    if (!HAS_STORAGE) {
+      mem.supplierButtons = map;
+      return;
+    }
+    localStorage.setItem(constants.KEYS.SUPPLIER_BUTTONS, JSON.stringify(map));
+  };
+
+  const upsertSupplierButton = (supplierName, data) => {
+    const key = normalizeSupplierName(supplierName);
+    if (!key) return null;
+    const map = readSupplierButtons();
+    const next = {
+      ...map,
+      [key]: {
+        ...(map[key] || {}),
+        ...data,
+      },
+    };
+    writeSupplierButtons(next);
+    return next[key];
   };
 
   const normalizeReturnUrl = (rawUrl) => {
@@ -120,6 +152,10 @@
     readByDateMap,
     writeByDateMap,
     getTodayCount,
+    normalizeSupplierName,
+    readSupplierButtons,
+    writeSupplierButtons,
+    upsertSupplierButton,
     normalizeReturnUrl,
     isSameUrl,
     getStoredReturnUrl,

@@ -8,6 +8,7 @@
       BY_DATE: "kh_clicks_by_date",
       RETURN_URL: "kh_return_url",
       SO_TIMERS: "kh_so_timer_state",
+      SUPPLIER_BUTTONS: "kh_supplier_buttons",
     },
     IDS: {
       STYLE: "kh-style",
@@ -22,6 +23,9 @@
       BTN_ETSY_ORDER: "kh-etsy-order-btn",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",
       BTN_PO_SUPPLIER: "kh-po-supplier-btn",
+      WRAP_PO_SUPPLIER: "kh-po-supplier-wrap",
+      BTN_PO_SUPPLIER_EDIT: "kh-po-supplier-edit-btn",
+      PO_SUPPLIER_MODAL: "kh-po-supplier-modal",
       BTN_SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
     },
     CLASSES: {
@@ -29,9 +33,13 @@
       BTN_SO_EX: "kh-so-ex-btn",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",
       PO_SUPPLIER_BTN: "kh-po-supplier-btn",
-      PO_SUPPLIER_ALI: "kh-po-supplier-aliexpress",
-      PO_SUPPLIER_GRAINGER: "kh-po-supplier-grainger",
-      PO_SUPPLIER_AMAZON: "kh-po-supplier-amazon",
+      PO_SUPPLIER_WRAP: "kh-po-supplier-wrap",
+      PO_SUPPLIER_EDIT: "kh-po-supplier-edit",
+      PO_SUPPLIER_MODAL: "kh-po-supplier-modal",
+      PO_SUPPLIER_MODAL_CONTENT: "kh-po-supplier-modal-content",
+      PO_SUPPLIER_MODAL_ROW: "kh-po-supplier-modal-row",
+      PO_SUPPLIER_MODAL_WARNING: "kh-po-supplier-modal-warning",
+      PO_SUPPLIER_MODAL_ACTIONS: "kh-po-supplier-modal-actions",
       SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
     },
     SELECTORS: {
@@ -70,6 +78,10 @@
       ULTRA_READY_COUNTDOWN_THRESHOLD_MS: 1500,
       ULTRA_WAIT_GRID_MS: 20000,
       ULTRA_SCAN_TIMEOUT_MS: 30000,
+      PO_SUPPLIER_BUTTON_BG: "#2f6fdd",
+      PO_SUPPLIER_BUTTON_TEXT: "#fff",
+      PO_SUPPLIER_BUTTON_DISABLED_BG: "#e2e6ef",
+      PO_SUPPLIER_BUTTON_DISABLED_TEXT: "#555",
     },
   };
 })();
