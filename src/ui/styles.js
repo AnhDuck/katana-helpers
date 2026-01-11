@@ -9,7 +9,7 @@
     style.id = constants.IDS.STYLE;
     style.textContent = `
       #${constants.IDS.BTN_CREATE_MO} {
-        background: #000 !important;
+        background: #8a00a8 !important;
         color: #fff !important;
         border: 1px solid rgba(255,255,255,0.25) !important;
         border-radius: 6px !important;
@@ -24,7 +24,7 @@
       #${constants.IDS.BTN_CREATE_MO}:active { transform: translateY(0.5px) !important; }
 
       #${constants.IDS.BTN_CREATE_PO} {
-        background: #8a00a8 !important;
+        background: #000 !important;
         color: #fff !important;
         border: 1px solid rgba(255,255,255,0.25) !important;
         border-radius: 6px !important;
