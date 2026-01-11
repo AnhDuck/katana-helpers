@@ -35,7 +35,7 @@
 
     const btn = utils.createButton({
       id: constants.IDS.BTN_CREATE_PO,
-      text: "Create PO",
+      text: "Make PO",
       onClick: async (event) => {
         event.preventDefault();
         event.stopPropagation();
