@@ -13,7 +13,7 @@
         color: #fff !important;
         border: 1px solid rgba(255,255,255,0.25) !important;
         border-radius: 6px !important;
-        padding: 6px 12px !important;
+        padding: 6px 10.8px !important;
         margin-right: 10px !important;
         font: inherit !important;
         cursor: pointer !important;
@@ -28,7 +28,7 @@
         color: #fff !important;
         border: 1px solid rgba(255,255,255,0.25) !important;
         border-radius: 6px !important;
-        padding: 6px 12px !important;
+        padding: 6px 10.8px !important;
         margin-right: 10px !important;
         font: inherit !important;
         cursor: pointer !important;
