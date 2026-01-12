@@ -29,6 +29,7 @@
       BTN_SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
     },
     CLASSES: {
+      BTN_BASE: "kh-btn",
       LABEL_MO_DONE_RETURN: "kh-mo-done-return-label",
       BTN_SO_EX: "kh-so-ex-btn",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",
@@ -78,10 +79,10 @@
       ULTRA_READY_COUNTDOWN_THRESHOLD_MS: 1500,
       ULTRA_WAIT_GRID_MS: 20000,
       ULTRA_SCAN_TIMEOUT_MS: 30000,
-      PO_SUPPLIER_BUTTON_BG: "#2f6fdd",
+      PO_SUPPLIER_BUTTON_BG: "#2563eb",
       PO_SUPPLIER_BUTTON_TEXT: "#fff",
-      PO_SUPPLIER_BUTTON_DISABLED_BG: "#e2e6ef",
-      PO_SUPPLIER_BUTTON_DISABLED_TEXT: "#555",
+      PO_SUPPLIER_BUTTON_DISABLED_BG: "#e2e8f0",
+      PO_SUPPLIER_BUTTON_DISABLED_TEXT: "#64748b",
     },
   };
 })();
