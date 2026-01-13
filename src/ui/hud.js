@@ -7,7 +7,7 @@
     const { el: hud, created } = utils.ensureElement(constants.IDS.HUD);
     if (created) {
       hud.innerHTML = `
-        <button id="kh-reset" type="button" class="${constants.CLASSES.BTN_BASE}" title="Reset total + today">Reset</button>
+        <button id="kh-reset" type="button" title="Reset total + today">Reset</button>
         <span class="kh-hud-text">
           <span class="kh-hud-total" title="Start date: January 3rd, 2026">Total clicks saved: <strong id="kh-total">0</strong></span> | Clicks saved today: <strong id="kh-today">0</strong>
         </span>

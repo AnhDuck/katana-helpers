@@ -29,7 +29,6 @@
       BTN_SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
     },
     CLASSES: {
-      BTN_BASE: "kh-btn",
       LABEL_MO_DONE_RETURN: "kh-mo-done-return-label",
       BTN_SO_EX: "kh-so-ex-btn",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",

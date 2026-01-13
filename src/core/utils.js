@@ -26,8 +26,7 @@
   const createButton = ({ id, className, text, title, onClick }) => {
     const btn = document.createElement("button");
     if (id) btn.id = id;
-    const baseClass = constants.CLASSES.BTN_BASE || "kh-btn";
-    btn.className = [baseClass, className].filter(Boolean).join(" ");
+    if (className) btn.className = className;
     btn.type = "button";
     if (text) btn.textContent = text;
     if (title) btn.title = title;
