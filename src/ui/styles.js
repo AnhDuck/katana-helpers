@@ -298,6 +298,54 @@
         border-color: #1e40af !important;
       }
 
+
+      .${constants.CLASSES.SPACER_RING_LABEL_WRAP} {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin-right: 10px !important;
+      }
+      #${constants.IDS.BTN_SPACER_RING_LABEL}.${constants.CLASSES.SPACER_RING_LABEL_BTN} {
+        background: #f97316 !important;
+        color: #fff !important;
+        border: 1px solid #ea580c !important;
+        border-radius: 6px !important;
+        padding: 6px 10px !important;
+        font: inherit !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+      }
+      #${constants.IDS.BTN_SPACER_RING_LABEL}.${constants.CLASSES.SPACER_RING_LABEL_BTN}:hover {
+        background: #ea580c !important;
+        border-color: #c2410c !important;
+      }
+      #${constants.IDS.BTN_SPACER_RING_LABEL}.${constants.CLASSES.SPACER_RING_LABEL_BTN}:active {
+        background: #c2410c !important;
+        transform: translateY(0.5px) !important;
+      }
+      #${constants.IDS.BTN_SPACER_RING_LABEL_EDIT}.${constants.CLASSES.SPACER_RING_LABEL_EDIT} {
+        border: 1px solid #fdba74 !important;
+        border-radius: 6px !important;
+        background: #fff7ed !important;
+        color: #9a3412 !important;
+        width: 28px !important;
+        height: 28px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font: inherit !important;
+        font-size: 13px !important;
+        line-height: 1 !important;
+        padding: 0 !important;
+        cursor: pointer !important;
+      }
+      #${constants.IDS.BTN_SPACER_RING_LABEL_EDIT}.${constants.CLASSES.SPACER_RING_LABEL_EDIT}:hover {
+        border-color: #fb923c !important;
+        background: #ffedd5 !important;
+      }
+
       #${constants.IDS.BTN_SIMPLYPRINT_NAV} {
         display: inline-flex !important;
         align-items: center !important;

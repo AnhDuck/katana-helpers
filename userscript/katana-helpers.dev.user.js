@@ -32,6 +32,7 @@
     "src/features/etsyButton.js",
     "src/features/poSupplierShortcut.js",
     "src/features/simplyPrintNav.js",
+    "src/features/spacerRingLabelShortcut.js",
     "src/init.js",
   ];
 

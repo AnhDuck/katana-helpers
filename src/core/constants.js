@@ -9,6 +9,7 @@
       RETURN_URL: "kh_return_url",
       SO_TIMERS: "kh_so_timer_state",
       SUPPLIER_BUTTONS: "kh_supplier_buttons",
+      SPACER_RING_LABEL_URL: "kh_spacer_ring_label_url",
     },
     IDS: {
       STYLE: "kh-style",
@@ -27,6 +28,8 @@
       BTN_PO_SUPPLIER_EDIT: "kh-po-supplier-edit-btn",
       PO_SUPPLIER_MODAL: "kh-po-supplier-modal",
       BTN_SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
+      BTN_SPACER_RING_LABEL: "kh-spacer-ring-label-btn",
+      BTN_SPACER_RING_LABEL_EDIT: "kh-spacer-ring-label-edit-btn",
     },
     CLASSES: {
       LABEL_MO_DONE_RETURN: "kh-mo-done-return-label",
@@ -41,6 +44,9 @@
       PO_SUPPLIER_MODAL_WARNING: "kh-po-supplier-modal-warning",
       PO_SUPPLIER_MODAL_ACTIONS: "kh-po-supplier-modal-actions",
       SIMPLYPRINT_NAV: "kh-simplyprint-nav-btn",
+      SPACER_RING_LABEL_WRAP: "kh-spacer-ring-label-wrap",
+      SPACER_RING_LABEL_BTN: "kh-spacer-ring-label-btn",
+      SPACER_RING_LABEL_EDIT: "kh-spacer-ring-label-edit-btn",
     },
     SELECTORS: {
       CREATE_BTN: 'button[data-testid="globalAddButton"]',
@@ -68,6 +74,7 @@
       ETSY_ORDER: "https://www.etsy.com/your/orders/sold",
       SIMPLYPRINT_PANEL: "https://simplyprint.io/panel/printers",
       SIMPLYPRINT_ICON: "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://simplyprint.io/favicon.ico&size=64",
+      SPACER_RING_LABEL_DEFAULT: "file:///C:/Users/bill/Desktop/Bag%20Labels/Spacer%20Rings/",
     },
     CONFIG: {
       DOUBLE_CLICK_WINDOW_MS: 250,
