@@ -20,6 +20,7 @@
     kh.features.etsyButton.ensureEtsyOrderButton();
     kh.features.poSupplierShortcut.ensureSupplierShortcutButton();
     kh.features.simplyPrintNav.ensureSimplyPrintNavButton();
+    kh.features.spacerRingLabelShortcut.ensureSpacerRingLabelShortcut();
   };
 
   const scheduleEnsure = () => {
