@@ -37,6 +37,14 @@
     ensureAll();
     initObserver();
     window.addEventListener("resize", scheduleEnsure);
+    document.documentElement.dataset.katanaHelpersReadyVersion = kh.constants.version || "unknown";
+    document.documentElement.dataset.katanaHelpersReadyAt = new Date().toISOString();
+    window.dispatchEvent(new CustomEvent("katana-helpers:ready", {
+      detail: {
+        version: document.documentElement.dataset.katanaHelpersReadyVersion,
+        at: document.documentElement.dataset.katanaHelpersReadyAt,
+      },
+    }));
   };
 
   init();

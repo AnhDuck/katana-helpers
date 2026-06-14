@@ -1,147 +1,83 @@
 // ==UserScript==
-// @name         Katana Helpers (DEV)
+// @name         Katana Helpers Dev
 // @namespace    https://factory.katanamrp.com/
-// @version      dev
-// @description  DEV loader for Katana Helpers (branch-based).
+// @version      2.9.0-dev.1
+// @description  Runtime loader for local Katana Helpers modules.
 // @match        https://factory.katanamrp.com/*
+// @updateURL    http://127.0.0.1:5174/userscript/katana-helpers.dev.user.js
+// @downloadURL  http://127.0.0.1:5174/userscript/katana-helpers.dev.user.js
 // @run-at       document-idle
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
-// @connect      raw.githubusercontent.com
+// @connect      127.0.0.1
+// @connect      localhost
 // ==/UserScript==
 
-(() => {
-  // Paste your branch URL here (tree URL or raw base URL).
-  // Example: https://github.com/AnhDuck/katana-helpers/tree/codex/implement-manufacturing-order-timer
-  const DEV_BRANCH_URL = "https://github.com/AnhDuck/katana-helpers/tree/work";
+(function () {
+  const devOrigin = "http://127.0.0.1:5174";
+  const runtimeUrl = devOrigin + "/katana-helpers.dev-runtime.js";
 
-  const MODULE_PATHS = [
-    "src/core/constants.js",
-    "src/core/utils.js",
-    "src/core/storage.js",
-    "src/ui/styles.js",
-    "src/ui/toast.js",
-    "src/ui/hud.js",
-    "src/ui/moTimer.js",
-    "src/features/statusHelper.js",
-    "src/features/createMo.js",
-    "src/features/createPo.js",
-    "src/features/doneAndReturn.js",
-    "src/features/ultraEx.js",
-    "src/features/soEx.js",
-    "src/features/etsyButton.js",
-    "src/features/poSupplierShortcut.js",
-    "src/features/simplyPrintNav.js",
-    "src/init.js",
-  ];
-
-  const warningText = "⚠️ Katana Helpers DEV MODE — branch-based code is running";
-  console.warn(`%c${warningText}`, "color: red; font-weight: bold; font-size: 14px;");
-
-  const showWarning = () => {
-    const targetWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-    const doc = targetWindow.document;
-    if (doc.getElementById("kh-dev-banner")) return;
-    const banner = doc.createElement("div");
-    banner.id = "kh-dev-banner";
-    banner.textContent = warningText;
-    banner.style.cssText = [
-      "position: fixed",
-      "bottom: 0",
-      "left: 0",
-      "right: 0",
-      "z-index: 10001",
-      "background: #b00020",
-      "color: #fff",
-      "font-weight: 700",
-      "font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
-      "padding: 4px 10px",
-      "text-align: center",
-      "box-shadow: 0 -2px 8px rgba(0,0,0,0.3)",
-      "font-size: 12px",
-    ].join("; ");
-    doc.documentElement.appendChild(banner);
-  };
-
-  const resolveRawBase = (url) => {
-    if (!url) return "";
-    const trimmed = url.replace(/\/+$/, "");
-    if (trimmed.startsWith("https://raw.githubusercontent.com/")) return trimmed;
-    const refsMatch = trimmed.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/refs\/heads\/(.+)$/);
-    if (refsMatch) {
-      const [, owner, repo, branchPath] = refsMatch;
-      return `https://raw.githubusercontent.com/${owner}/${repo}/${branchPath}`;
-    }
-    const treeMatch = trimmed.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/tree\/(.+)$/);
-    if (!treeMatch) return "";
-    const [, owner, repo, branchPath] = treeMatch;
-    return `https://raw.githubusercontent.com/${owner}/${repo}/${branchPath}`;
-  };
-
-  const loadText = (url) => new Promise((resolve) => {
-    GM_xmlhttpRequest({
-      method: "GET",
-      url,
-      onload: (response) => {
-        if (response.status >= 200 && response.status < 300) {
-          resolve(response.responseText);
-        } else {
-          resolve("");
-        }
-      },
-      onerror: () => resolve(""),
-    });
-  });
-
-  const runModule = (code) => {
-    if (!code) return false;
-    const targetWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-    const runner = new Function("targetWindow", `
-      const window = targetWindow;
-      const document = targetWindow.document;
-      const navigator = targetWindow.navigator;
-      const MutationObserver = targetWindow.MutationObserver;
-      const requestAnimationFrame = targetWindow.requestAnimationFrame.bind(targetWindow);
-      const setTimeout = targetWindow.setTimeout.bind(targetWindow);
-      const clearTimeout = targetWindow.clearTimeout.bind(targetWindow);
-      const setInterval = targetWindow.setInterval.bind(targetWindow);
-      const clearInterval = targetWindow.clearInterval.bind(targetWindow);
-      const MouseEvent = targetWindow.MouseEvent;
-      const Event = targetWindow.Event;
-      const Intl = targetWindow.Intl;
-      ${code}
-    `);
-    runner(targetWindow);
-    return true;
-  };
-
-  const loadAll = async () => {
-    const rawBase = resolveRawBase(DEV_BRANCH_URL);
-    if (!rawBase) {
-      console.warn(
-        "%cKatana Helpers DEV loader: invalid DEV_BRANCH_URL. Paste a valid GitHub tree or raw URL.",
-        "color: red; font-weight: bold;",
-      );
-      return;
-    }
-
-    for (const path of MODULE_PATHS) {
-      const code = await loadText(`${rawBase}/${path}`);
-      const ok = runModule(code);
-      if (!ok) {
-        console.warn(`%cKatana Helpers DEV loader: failed to load ${path}`, "color: red; font-weight: bold;");
-        break;
-      }
-    }
-  };
-
-  const targetWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
-  const doc = targetWindow.document;
-  if (doc.readyState === "loading") {
-    doc.addEventListener("DOMContentLoaded", showWarning, { once: true });
-  } else {
-    showWarning();
+  function withCacheBust(url) {
+    return url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
   }
 
-  loadAll();
+  function requestText(url) {
+    return new Promise((resolve, reject) => {
+      GM_xmlhttpRequest({
+        method: "GET",
+        url: withCacheBust(url),
+        headers: { "Cache-Control": "no-cache" },
+        timeout: 10000,
+        onload(response) {
+          if (response.status >= 200 && response.status < 300) {
+            resolve(response.responseText);
+            return;
+          }
+          reject(new Error("HTTP " + response.status + " for " + url));
+        },
+        onerror() {
+          reject(new Error("Network error for " + url));
+        },
+        ontimeout() {
+          reject(new Error("Timeout loading " + url));
+        }
+      });
+    });
+  }
+
+  function showBootstrapFailure(error) {
+    console.error("[Katana Helpers Dev] Failed to load local runtime", error);
+    const box = document.createElement("div");
+    box.textContent = "Katana Helpers Dev failed to load runtime from " + devOrigin + ": " + error.message;
+    box.style.cssText = [
+      "position:fixed",
+      "z-index:2147483647",
+      "left:12px",
+      "bottom:12px",
+      "max-width:520px",
+      "padding:10px 12px",
+      "border:1px solid #b91c1c",
+      "background:#fef2f2",
+      "color:#7f1d1d",
+      "font:13px/1.4 system-ui,-apple-system,Segoe UI,sans-serif",
+      "box-shadow:0 8px 20px rgba(0,0,0,.18)"
+    ].join(";");
+    document.documentElement.appendChild(box);
+  }
+
+  async function loadRuntime() {
+    const targetWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
+    const devConfig = Object.freeze({
+      bootstrapVersion: "2.9.0-dev.1",
+      origin: devOrigin
+    });
+    const source = await requestText(runtimeUrl);
+    new Function("targetWindow", "KatanaHelpersDevConfig", "GM_xmlhttpRequest", source + "\n//# sourceURL=" + runtimeUrl)(
+      targetWindow,
+      devConfig,
+      typeof GM_xmlhttpRequest === "function" ? GM_xmlhttpRequest : null
+    );
+  }
+
+  loadRuntime().catch(showBootstrapFailure);
 })();

@@ -2,6 +2,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
+    version: "2.9.0",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
