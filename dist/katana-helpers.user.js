@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers
 // @namespace    https://factory.katanamrp.com/
-// @version      2.10.0
+// @version      2.11.0
 // @description  Workflow helpers for Katana MRP.
 // @match        https://factory.katanamrp.com/*
 // @updateURL    https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/userscript/katana-helpers.release.user.js
@@ -16,7 +16,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.10.0",
+    version: "2.11.0",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -24,14 +24,17 @@
       RETURN_URL: "kh_return_url",
       SO_TIMERS: "kh_so_timer_state",
       SUPPLIER_BUTTONS: "kh_supplier_buttons",
+      SO_INGREDIENTS_PREVIEW_ENABLED: "kh_so_ingredients_preview_enabled",
     },
     IDS: {
       STYLE: "kh-style",
       HUD: "kh-hud",
+      HUD_SO_INGREDIENTS_TOGGLE: "kh-so-ingredients-toggle",
       MO_TIMER: "kh-mo-timer",
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
       BTN_CREATE_ULTRA_MO: "kh-create-ultra-mo-btn",
+      SO_INGREDIENTS_PANEL: "kh-so-ingredients-panel",
       BTN_CREATE_PO: "kh-create-po-btn",
       BTN_STATUS_HELPER: "kh-status-helper-btn",
       BTN_MO_DONE_RETURN: "kh-mo-done-return-btn",
@@ -47,6 +50,8 @@
     CLASSES: {
       LABEL_MO_DONE_RETURN: "kh-mo-done-return-label",
       BTN_SO_EX: "kh-so-ex-btn",
+      SO_INGREDIENTS_PANEL: "kh-so-ingredients-panel",
+      SO_INGREDIENTS_PANEL_ROW: "kh-so-ingredients-panel-row",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",
       PO_SUPPLIER_BTN: "kh-po-supplier-btn",
       PO_SUPPLIER_WRAP: "kh-po-supplier-wrap",
@@ -69,6 +74,9 @@
       DIALOG_TITLE: 'div[role="dialog"] h2',
       DIALOG_CLOSE_BTN: 'div[role="dialog"] button#closeButton',
       SO_ROW_ACTIONS_BTN: 'button[data-testid="soRowActionsMenu-button"]',
+      SO_INGREDIENTS_CELL: '[role="gridcell"][col-id="materialAvailability"]',
+      SO_INGREDIENTS_POPUP_DIALOG: '[role="dialog"]',
+      SO_INGREDIENTS_POPUP_CLOSE: 'button[data-testid="headerCloseButton"]',
       SO_MENU_MAKE_IN_BATCH: 'li[data-testid="soRowActionsMenu-item-makeInBatch"]',
       MO_DIALOG: 'div[role="dialog"]',
       MO_DIALOG_CONTENT: '[data-testid="manufacturingOrderLayoutContent"]',
@@ -256,7 +264,7 @@
   };
 
   const HAS_STORAGE = storageAvailable();
-  let mem = { total: 0, byDate: {}, supplierButtons: {} };
+  let mem = { total: 0, byDate: {}, supplierButtons: {}, soIngredientsPreviewEnabled: true };
 
   const readTotal = () => {
     if (!HAS_STORAGE) return mem.total;
@@ -308,6 +316,21 @@
       return;
     }
     localStorage.setItem(constants.KEYS.SUPPLIER_BUTTONS, JSON.stringify(map));
+  };
+
+  const readSoIngredientsPreviewEnabled = () => {
+    if (!HAS_STORAGE) return mem.soIngredientsPreviewEnabled;
+    const raw = localStorage.getItem(constants.KEYS.SO_INGREDIENTS_PREVIEW_ENABLED);
+    return raw == null ? true : raw === "1";
+  };
+
+  const writeSoIngredientsPreviewEnabled = (enabled) => {
+    const next = enabled ? "1" : "0";
+    if (!HAS_STORAGE) {
+      mem.soIngredientsPreviewEnabled = enabled;
+      return;
+    }
+    localStorage.setItem(constants.KEYS.SO_INGREDIENTS_PREVIEW_ENABLED, next);
   };
 
   const upsertSupplierButton = (supplierName, data) => {
@@ -397,6 +420,8 @@
     normalizeSupplierName,
     readSupplierButtons,
     writeSupplierButtons,
+    readSoIngredientsPreviewEnabled,
+    writeSoIngredientsPreviewEnabled,
     upsertSupplierButton,
     normalizeReturnUrl,
     isSameUrl,
@@ -569,6 +594,79 @@
       .${constants.CLASSES.BTN_SO_EX}:hover { background: #c7d2fe !important; border-color: #a5b4fc !important; }
       .${constants.CLASSES.BTN_SO_EX}.kh-ultra:hover { background: #b91c1c !important; border-color: #991b1b !important; }
       .${constants.CLASSES.BTN_SO_EX}:active { transform: translateY(0.5px) !important; }
+
+      #${constants.IDS.SO_INGREDIENTS_PANEL} {
+        position: fixed !important;
+        left: var(--kh-so-ingredients-left, 0px) !important;
+        top: var(--kh-so-ingredients-top, 0px) !important;
+        width: var(--kh-so-ingredients-width, 360px) !important;
+        max-height: var(--kh-so-ingredients-max-height, 520px) !important;
+        z-index: 10001 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.3) !important;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-header {
+        padding: 12px 14px 10px !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        background: #fff !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} h3 {
+        margin: 0 !important;
+        font-size: 15px !important;
+        line-height: 1.25 !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-product {
+        margin-top: 5px !important;
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+        color: #475569 !important;
+        word-break: break-word !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-body {
+        overflow: auto !important;
+        padding: 0 !important;
+      }
+      .${constants.CLASSES.SO_INGREDIENTS_PANEL_ROW} {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        gap: 10px !important;
+        align-items: start !important;
+        padding: 10px 14px !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        background: #f8fafc !important;
+      }
+      .${constants.CLASSES.SO_INGREDIENTS_PANEL_ROW}:last-child {
+        border-bottom: 0 !important;
+      }
+      .${constants.CLASSES.SO_INGREDIENTS_PANEL_ROW} .kh-so-ingredients-name {
+        font-size: 13px !important;
+        line-height: 1.35 !important;
+        color: #0f172a !important;
+        word-break: break-word !important;
+      }
+      .${constants.CLASSES.SO_INGREDIENTS_PANEL_ROW} .kh-so-ingredients-missing {
+        color: #b42318 !important;
+        font-size: 13px !important;
+        line-height: 1.25 !important;
+        font-weight: 800 !important;
+        white-space: nowrap !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-empty,
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-note {
+        padding: 12px 14px !important;
+        font-size: 13px !important;
+        line-height: 1.35 !important;
+        color: #475569 !important;
+      }
 
       .${constants.CLASSES.ETSY_ORDER_CELL} {
         display: flex !important;
@@ -764,6 +862,25 @@
       }
       #${constants.IDS.HUD} .kh-hud-text { pointer-events: none; }
       #${constants.IDS.HUD} .kh-hud-total { pointer-events: auto; }
+      #${constants.IDS.HUD} .kh-hud-toggle {
+        pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-right: 8px;
+        color: rgba(255,255,255,0.92);
+        font: inherit;
+        font-size: 12px;
+        user-select: none;
+        cursor: pointer;
+      }
+      #${constants.IDS.HUD} .kh-hud-toggle input {
+        margin: 0;
+        width: 13px;
+        height: 13px;
+        accent-color: #38bdf8;
+        cursor: pointer;
+      }
       #${constants.IDS.MO_TIMER} {
         pointer-events: auto;
         cursor: pointer;
@@ -880,6 +997,10 @@
     if (created) {
       hud.innerHTML = `
         <button id="kh-reset" type="button" title="Reset total + today">Reset</button>
+        <label class="kh-hud-toggle" title="Show missing ingredients beside single-click EX dialogs">
+          <input id="${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}" type="checkbox">
+          <span>Ingredient preview</span>
+        </label>
         <span class="kh-hud-text">
           <span class="kh-hud-total" title="Start date: January 3rd, 2026">Total clicks saved: <strong id="kh-total">0</strong></span> | Clicks saved today: <strong id="kh-today">0</strong>
         </span>
@@ -892,6 +1013,11 @@
         storage.writeByDateMap({});
         updateHud();
       }, { capture: true });
+
+      hud.querySelector(`#${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}`)?.addEventListener("change", (event) => {
+        storage.writeSoIngredientsPreviewEnabled(event.target.checked);
+        kh.features?.soEx?.ensureSoExButtons?.();
+      }, { capture: true });
     }
 
     updateHud();
@@ -903,6 +1029,7 @@
 
     const totalEl = hud.querySelector("#kh-total");
     const todayEl = hud.querySelector("#kh-today");
+    const previewToggle = hud.querySelector(`#${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}`);
 
     const total = storage.readTotal();
     const ymd = utils.getPacificYMD();
@@ -911,6 +1038,7 @@
 
     if (totalEl) totalEl.textContent = String(total);
     if (todayEl) todayEl.textContent = String(today);
+    if (previewToggle) previewToggle.checked = storage.readSoIngredientsPreviewEnabled();
   };
 
   const incrementCounters = (delta = 1) => {
@@ -2134,6 +2262,7 @@
 
   const exTimers = new WeakMap();
   let manualUltraOriginUrl = null;
+  let manualIngredientsPreview = null;
 
   const getClosestAgRow = (el) => el?.closest?.(".ag-row") || null;
 
@@ -2144,6 +2273,100 @@
 
   const setRunning = (btn, on) => {
     btn.setAttribute("data-kh-running", on ? "1" : "0");
+  };
+
+  const isIngredientsPreviewEnabled = () => storage.readSoIngredientsPreviewEnabled?.() !== false;
+
+  const findIngredientsPopupDialog = () => (
+    Array.from(document.querySelectorAll(constants.SELECTORS.SO_INGREDIENTS_POPUP_DIALOG))
+      .find((dialog) => utils.normText(dialog.textContent).includes("missing and expected ingredients for"))
+    || null
+  );
+
+  const closeIngredientsPopupDialog = async () => {
+    const dialog = findIngredientsPopupDialog();
+    const closeBtn = dialog?.querySelector(constants.SELECTORS.SO_INGREDIENTS_POPUP_CLOSE);
+    if (!closeBtn) return;
+
+    utils.dispatchRealClick(closeBtn);
+    await utils.waitForCondition(() => !findIngredientsPopupDialog(), 2000, 80).catch(() => null);
+  };
+
+  const waitForIngredientsPopupReady = async () => utils.waitForCondition(() => {
+    const dialog = findIngredientsPopupDialog();
+    if (!dialog) return false;
+
+    const rows = Array.from(dialog.querySelectorAll(".ag-row"));
+    const hasReadableRow = rows.some((row) => {
+      const name = utils.normText(row.querySelector('[role="gridcell"][col-id="name"]')?.textContent);
+      const missing = utils.normText(row.querySelector('[role="gridcell"][col-id="missingQuantity"]')?.textContent);
+      return name && missing;
+    });
+    if (hasReadableRow) return dialog;
+
+    const text = utils.normText(dialog.textContent);
+    if (!text.includes("loading")) return dialog;
+    return false;
+  }, 5000, 90);
+
+  const parseIngredientsPopup = (dialog) => {
+    const product =
+      dialog.querySelector('[data-testid="cardHeaderName"]')?.textContent
+      || dialog.querySelector('[data-testid="headerNameUNDEFINED"]')?.textContent
+      || "";
+
+    const seen = new Set();
+    const rows = [];
+
+    Array.from(dialog.querySelectorAll(".ag-row")).forEach((row) => {
+      const nameCell = row.querySelector('[role="gridcell"][col-id="name"]');
+      const missingCell = row.querySelector('[role="gridcell"][col-id="missingQuantity"]');
+      const expectedCell = row.querySelector('[role="gridcell"][col-id="make-buy-button"]');
+
+      const name = (nameCell?.textContent || "").replace(/\s+/g, " ").trim();
+      const missing = (missingCell?.textContent || "").replace(/\s+/g, " ").trim();
+      if (!name || !missing) return;
+
+      const key = `${name}||${missing}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      rows.push({
+        name,
+        missing,
+        missingValue: (missingCell?.querySelector('[data-testid="number-renderer-value-missingQuantity"]')?.textContent || "").trim(),
+        missingSuffix: (missingCell?.querySelector('[data-testid="number-renderer-suffix-missingQuantity"]')?.textContent || "").trim(),
+        canMake: !!expectedCell?.querySelector('button[data-testid="makeOrderButton"]'),
+      });
+    });
+
+    return {
+      key: `${Date.now()}-${rows.length}-${utils.normText(product).slice(0, 32)}`,
+      product: product.replace(/\s+/g, " ").trim(),
+      rows,
+    };
+  };
+
+  const readIngredientsPreviewFromRow = async (rowEl) => {
+    const ingredientsCell = rowEl?.querySelector(constants.SELECTORS.SO_INGREDIENTS_CELL);
+    if (!ingredientsCell) return { ok: false, reason: "no_ingredients_cell" };
+
+    const statusText = utils.normText(ingredientsCell.textContent);
+    if (!statusText.includes("not available")) return { ok: false, reason: "ingredients_not_unavailable" };
+
+    try {
+      utils.dispatchRealClick(ingredientsCell);
+      const dialog = await waitForIngredientsPopupReady();
+      const data = parseIngredientsPopup(dialog);
+      await closeIngredientsPopupDialog();
+
+      if (!data.rows.length) return { ok: false, reason: "no_missing_rows" };
+      return { ok: true, data };
+    } catch (err) {
+      utils.log("Ingredients preview read failed:", err);
+      await closeIngredientsPopupDialog().catch(() => null);
+      return { ok: false, reason: "popup_read_failed" };
+    }
   };
 
   const runSoExX1Flow = async (rowEl) => {
@@ -2208,12 +2431,125 @@
 
   const clearManualUltraOrigin = () => {
     manualUltraOriginUrl = null;
+    manualIngredientsPreview = null;
+    removeIngredientsPreviewPanel();
   };
 
   const waitForMoDialogReady = async () => {
     await utils.waitForSelector(constants.SELECTORS.BATCH_QTY_INPUT, 5000);
     await utils.waitForSelector(constants.SELECTORS.CREATE_AND_OPEN, 5000);
     return findMoDialog();
+  };
+
+  const positionIngredientsPreviewPanel = (panel, dialog) => {
+    const rect = dialog.getBoundingClientRect();
+    const margin = 12;
+    const gap = 12;
+    const rightSpace = window.innerWidth - rect.right - gap - margin;
+
+    let width;
+    let left;
+    let top;
+    let maxHeight;
+
+    if (rightSpace >= 300) {
+      width = Math.min(420, rightSpace);
+      left = rect.right + gap;
+      top = Math.max(margin, rect.top);
+      maxHeight = Math.max(220, Math.min(rect.height, window.innerHeight - top - margin));
+    } else {
+      width = Math.min(Math.max(300, rect.width), window.innerWidth - margin * 2);
+      left = Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin));
+      top = Math.min(rect.bottom + gap, window.innerHeight - 240);
+      top = Math.max(margin, top);
+      maxHeight = Math.max(220, window.innerHeight - top - margin);
+    }
+
+    panel.style.setProperty("--kh-so-ingredients-left", `${Math.round(left)}px`);
+    panel.style.setProperty("--kh-so-ingredients-top", `${Math.round(top)}px`);
+    panel.style.setProperty("--kh-so-ingredients-width", `${Math.round(width)}px`);
+    panel.style.setProperty("--kh-so-ingredients-max-height", `${Math.round(maxHeight)}px`);
+  };
+
+  function removeIngredientsPreviewPanel() {
+    document.getElementById(constants.IDS.SO_INGREDIENTS_PANEL)?.remove();
+  }
+
+  const renderIngredientsPreviewPanel = (panel, preview) => {
+    panel.textContent = "";
+
+    const header = document.createElement("div");
+    header.className = "kh-so-ingredients-panel-header";
+
+    const title = document.createElement("h3");
+    title.textContent = "Missing ingredients";
+    header.appendChild(title);
+
+    if (preview.product) {
+      const product = document.createElement("div");
+      product.className = "kh-so-ingredients-panel-product";
+      product.textContent = preview.product;
+      header.appendChild(product);
+    }
+
+    const body = document.createElement("div");
+    body.className = "kh-so-ingredients-panel-body";
+
+    if (!preview.rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "kh-so-ingredients-panel-empty";
+      empty.textContent = "No missing ingredients found.";
+      body.appendChild(empty);
+    } else {
+      preview.rows.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = constants.CLASSES.SO_INGREDIENTS_PANEL_ROW;
+
+        const name = document.createElement("div");
+        name.className = "kh-so-ingredients-name";
+        name.textContent = item.name;
+
+        const missing = document.createElement("div");
+        missing.className = "kh-so-ingredients-missing";
+        missing.textContent = item.missing;
+
+        row.appendChild(name);
+        row.appendChild(missing);
+        body.appendChild(row);
+      });
+    }
+
+    panel.appendChild(header);
+    panel.appendChild(body);
+    panel.dataset.khPreviewKey = preview.key;
+  };
+
+  const ensureIngredientsPreviewPanel = () => {
+    if (!isIngredientsPreviewEnabled() || !manualUltraOriginUrl || !manualIngredientsPreview) {
+      removeIngredientsPreviewPanel();
+      return;
+    }
+
+    const dialog = findMoDialog();
+    if (!dialog) {
+      removeIngredientsPreviewPanel();
+      return;
+    }
+
+    let panel = document.getElementById(constants.IDS.SO_INGREDIENTS_PANEL);
+    if (!panel) {
+      panel = document.createElement("aside");
+      panel.id = constants.IDS.SO_INGREDIENTS_PANEL;
+      panel.className = constants.CLASSES.SO_INGREDIENTS_PANEL;
+      panel.setAttribute("aria-label", "Missing ingredients");
+      document.documentElement.appendChild(panel);
+    }
+
+    if (panel.dataset.khPreviewKey !== manualIngredientsPreview.key) {
+      renderIngredientsPreviewPanel(panel, manualIngredientsPreview);
+    }
+
+    positionIngredientsPreviewPanel(panel, dialog);
   };
 
   const runSoOpenMakeToStockDialogFlow = async (rowEl) => {
@@ -2251,6 +2587,7 @@
     }
 
     setCreateUltraRunning(btn, true);
+    removeIngredientsPreviewPanel();
 
     const prevUrl = window.location.href;
     storage.storeReturnUrl(originUrl);
@@ -2333,15 +2670,25 @@
 
   const runSoManualUltraDialogFlow = async (rowEl) => {
     manualUltraOriginUrl = window.location.href;
+    manualIngredientsPreview = null;
+    removeIngredientsPreviewPanel();
+
+    if (isIngredientsPreviewEnabled()) {
+      const preview = await readIngredientsPreviewFromRow(rowEl);
+      if (preview.ok) {
+        manualIngredientsPreview = preview.data;
+      }
+    }
 
     const res = await runSoOpenMakeToStockDialogFlow(rowEl);
     if (!res.ok) {
-      manualUltraOriginUrl = null;
+      clearManualUltraOrigin();
       kh.ui.toast.showToast(`EX stopped: couldn't open Make to stock (${res.reason}).`, 5200);
       return { ok: false };
     }
 
     ensureCreateUltraButton();
+    ensureIngredientsPreviewPanel();
     kh.ui.hud.incrementCounters(constants.CONFIG.SAVED_CLICKS_EX_MANUAL_DIALOG);
     kh.ui.toast.showToast("EX: enter quantity, then click Create + Ultra.", 3600);
     return { ok: true };
@@ -2350,6 +2697,7 @@
   const ensureSoExButtons = () => {
     kh.ui.styles.ensureStyles();
     ensureCreateUltraButton();
+    ensureIngredientsPreviewPanel();
 
     const actionButtons = document.querySelectorAll(constants.SELECTORS.SO_ROW_ACTIONS_BTN);
     if (!actionButtons.length) return;
@@ -2437,7 +2785,12 @@
   };
 
   kh.features = kh.features || {};
-  kh.features.soEx = { ensureSoExButtons, runSoExX1Flow, runSoManualUltraDialogFlow };
+  kh.features.soEx = {
+    ensureSoExButtons,
+    runSoExX1Flow,
+    runSoManualUltraDialogFlow,
+    readIngredientsPreviewFromRow,
+  };
 })();
 
 

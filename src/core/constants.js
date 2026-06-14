@@ -2,7 +2,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.10.0",
+    version: "2.11.0",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -10,14 +10,17 @@
       RETURN_URL: "kh_return_url",
       SO_TIMERS: "kh_so_timer_state",
       SUPPLIER_BUTTONS: "kh_supplier_buttons",
+      SO_INGREDIENTS_PREVIEW_ENABLED: "kh_so_ingredients_preview_enabled",
     },
     IDS: {
       STYLE: "kh-style",
       HUD: "kh-hud",
+      HUD_SO_INGREDIENTS_TOGGLE: "kh-so-ingredients-toggle",
       MO_TIMER: "kh-mo-timer",
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
       BTN_CREATE_ULTRA_MO: "kh-create-ultra-mo-btn",
+      SO_INGREDIENTS_PANEL: "kh-so-ingredients-panel",
       BTN_CREATE_PO: "kh-create-po-btn",
       BTN_STATUS_HELPER: "kh-status-helper-btn",
       BTN_MO_DONE_RETURN: "kh-mo-done-return-btn",
@@ -33,6 +36,8 @@
     CLASSES: {
       LABEL_MO_DONE_RETURN: "kh-mo-done-return-label",
       BTN_SO_EX: "kh-so-ex-btn",
+      SO_INGREDIENTS_PANEL: "kh-so-ingredients-panel",
+      SO_INGREDIENTS_PANEL_ROW: "kh-so-ingredients-panel-row",
       ETSY_ORDER_CELL: "kh-etsy-order-cell",
       PO_SUPPLIER_BTN: "kh-po-supplier-btn",
       PO_SUPPLIER_WRAP: "kh-po-supplier-wrap",
@@ -55,6 +60,9 @@
       DIALOG_TITLE: 'div[role="dialog"] h2',
       DIALOG_CLOSE_BTN: 'div[role="dialog"] button#closeButton',
       SO_ROW_ACTIONS_BTN: 'button[data-testid="soRowActionsMenu-button"]',
+      SO_INGREDIENTS_CELL: '[role="gridcell"][col-id="materialAvailability"]',
+      SO_INGREDIENTS_POPUP_DIALOG: '[role="dialog"]',
+      SO_INGREDIENTS_POPUP_CLOSE: 'button[data-testid="headerCloseButton"]',
       SO_MENU_MAKE_IN_BATCH: 'li[data-testid="soRowActionsMenu-item-makeInBatch"]',
       MO_DIALOG: 'div[role="dialog"]',
       MO_DIALOG_CONTENT: '[data-testid="manufacturingOrderLayoutContent"]',

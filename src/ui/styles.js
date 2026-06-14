@@ -160,6 +160,79 @@
       .${constants.CLASSES.BTN_SO_EX}.kh-ultra:hover { background: #b91c1c !important; border-color: #991b1b !important; }
       .${constants.CLASSES.BTN_SO_EX}:active { transform: translateY(0.5px) !important; }
 
+      #${constants.IDS.SO_INGREDIENTS_PANEL} {
+        position: fixed !important;
+        left: var(--kh-so-ingredients-left, 0px) !important;
+        top: var(--kh-so-ingredients-top, 0px) !important;
+        width: var(--kh-so-ingredients-width, 360px) !important;
+        max-height: var(--kh-so-ingredients-max-height, 520px) !important;
+        z-index: 10001 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.3) !important;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-header {
+        padding: 12px 14px 10px !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        background: #fff !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} h3 {
+        margin: 0 !important;
+        font-size: 15px !important;
+        line-height: 1.25 !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-product {
+        margin-top: 5px !important;
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+        color: #475569 !important;
+        word-break: break-word !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-body {
+        overflow: auto !important;
+        padding: 0 !important;
+      }
+      .${constants.CLASSES.SO_INGREDIENTS_PANEL_ROW} {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        gap: 10px !important;
+        align-items: start !important;
+        padding: 10px 14px !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        background: #f8fafc !important;
+      }
+      .${constants.CLASSES.SO_INGREDIENTS_PANEL_ROW}:last-child {
+        border-bottom: 0 !important;
+      }
+      .${constants.CLASSES.SO_INGREDIENTS_PANEL_ROW} .kh-so-ingredients-name {
+        font-size: 13px !important;
+        line-height: 1.35 !important;
+        color: #0f172a !important;
+        word-break: break-word !important;
+      }
+      .${constants.CLASSES.SO_INGREDIENTS_PANEL_ROW} .kh-so-ingredients-missing {
+        color: #b42318 !important;
+        font-size: 13px !important;
+        line-height: 1.25 !important;
+        font-weight: 800 !important;
+        white-space: nowrap !important;
+      }
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-empty,
+      #${constants.IDS.SO_INGREDIENTS_PANEL} .kh-so-ingredients-panel-note {
+        padding: 12px 14px !important;
+        font-size: 13px !important;
+        line-height: 1.35 !important;
+        color: #475569 !important;
+      }
+
       .${constants.CLASSES.ETSY_ORDER_CELL} {
         display: flex !important;
         align-items: flex-end !important;
@@ -354,6 +427,25 @@
       }
       #${constants.IDS.HUD} .kh-hud-text { pointer-events: none; }
       #${constants.IDS.HUD} .kh-hud-total { pointer-events: auto; }
+      #${constants.IDS.HUD} .kh-hud-toggle {
+        pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-right: 8px;
+        color: rgba(255,255,255,0.92);
+        font: inherit;
+        font-size: 12px;
+        user-select: none;
+        cursor: pointer;
+      }
+      #${constants.IDS.HUD} .kh-hud-toggle input {
+        margin: 0;
+        width: 13px;
+        height: 13px;
+        accent-color: #38bdf8;
+        cursor: pointer;
+      }
       #${constants.IDS.MO_TIMER} {
         pointer-events: auto;
         cursor: pointer;

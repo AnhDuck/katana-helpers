@@ -14,7 +14,7 @@
   };
 
   const HAS_STORAGE = storageAvailable();
-  let mem = { total: 0, byDate: {}, supplierButtons: {} };
+  let mem = { total: 0, byDate: {}, supplierButtons: {}, soIngredientsPreviewEnabled: true };
 
   const readTotal = () => {
     if (!HAS_STORAGE) return mem.total;
@@ -66,6 +66,21 @@
       return;
     }
     localStorage.setItem(constants.KEYS.SUPPLIER_BUTTONS, JSON.stringify(map));
+  };
+
+  const readSoIngredientsPreviewEnabled = () => {
+    if (!HAS_STORAGE) return mem.soIngredientsPreviewEnabled;
+    const raw = localStorage.getItem(constants.KEYS.SO_INGREDIENTS_PREVIEW_ENABLED);
+    return raw == null ? true : raw === "1";
+  };
+
+  const writeSoIngredientsPreviewEnabled = (enabled) => {
+    const next = enabled ? "1" : "0";
+    if (!HAS_STORAGE) {
+      mem.soIngredientsPreviewEnabled = enabled;
+      return;
+    }
+    localStorage.setItem(constants.KEYS.SO_INGREDIENTS_PREVIEW_ENABLED, next);
   };
 
   const upsertSupplierButton = (supplierName, data) => {
@@ -155,6 +170,8 @@
     normalizeSupplierName,
     readSupplierButtons,
     writeSupplierButtons,
+    readSoIngredientsPreviewEnabled,
+    writeSoIngredientsPreviewEnabled,
     upsertSupplierButton,
     normalizeReturnUrl,
     isSameUrl,

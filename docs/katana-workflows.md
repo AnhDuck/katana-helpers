@@ -16,6 +16,33 @@ in-app browser does not run the installed Tampermonkey script.
   - `li[data-testid="soRowActionsMenu-item-addAttribute"]`.
   - `li[data-testid="soRowActionsMenu-item-delete"]`.
 - `Make to stock` opens the native quick-add manufacturing order dialog.
+- Sales order row availability columns observed in Chrome:
+  - Sales items: `[role="gridcell"][col-id="availability3"]`.
+  - Ingredients: `[role="gridcell"][col-id="materialAvailability"]`.
+  - Both use `[data-testid="agGridColoredCell"]` for the visible status pill.
+
+## Sales Order Missing Ingredients Popup
+
+- Trigger: click the sales order row Ingredients cell,
+  `[role="gridcell"][col-id="materialAvailability"]`, when it shows
+  "Not available".
+- Popup root: `[role="dialog"]`.
+- Popup title label: `[data-testid="cardHeaderLabelUNDEFINED"]`, observed text
+  "Missing and expected ingredients for".
+- Product name: `[data-testid="cardHeaderName"]` or
+  `[data-testid="headerNameUNDEFINED"]`.
+- Close button: `button[data-testid="headerCloseButton"]`.
+- Popup grid columns observed in Chrome:
+  - `name` - ingredient name.
+  - `missingQuantity` - missing quantity.
+  - `make-buy-button` - expected-from action column.
+- Missing quantity renderer test IDs:
+  - `[data-testid="number-renderer-container-missingQuantity"]`.
+  - `[data-testid="number-renderer-value-missingQuantity"]`.
+  - `[data-testid="number-renderer-suffix-missingQuantity"]`.
+- Native popup Make button: `button[data-testid="makeOrderButton"]`.
+- The popup can initially show `Loading...`; wait for popup grid rows before
+  reading ingredient data.
 
 ## New Manufacturing Order Dialog
 
@@ -89,6 +116,9 @@ in-app browser does not run the installed Tampermonkey script.
   selectors.
 - AG Grid virtualizes rows, so availability scanning must scroll the grid
   rather than only reading initially visible rows.
+- Feasibility notes for showing missing ingredients beside the single-click
+  `EX` quick-add manufacturing dialog are documented in
+  `docs/ex-ingredients-side-panel-feasibility.md`.
 - The dev userscript loads one server-side runtime and live bundle from
   `http://127.0.0.1:5174/`; normal source changes require
   `node tools/build-release.js` plus a Katana page refresh, not a Tampermonkey
@@ -97,3 +127,13 @@ in-app browser does not run the installed Tampermonkey script.
   dev bootstrap userscript code or metadata actually changed. A normal app
   version bump for source modules should leave the bootstrap version untouched,
   otherwise Tampermonkey will report an unnecessary bootstrap update.
+
+## Katana Helpers Settings
+
+- The bottom HUD includes an `Ingredient preview` checkbox.
+- Setting storage key: `kh_so_ingredients_preview_enabled`.
+- Default: enabled when the storage key is absent.
+- When disabled, single-click `EX` does not open/read the sales order
+  Ingredients popup and no missing-ingredients side panel is shown.
+- When enabled, the side panel is still shown only for rows whose Ingredients
+  cell text contains `Not available`.
