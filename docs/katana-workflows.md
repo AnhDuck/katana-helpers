@@ -1,0 +1,99 @@
+# Katana Workflows And Selectors
+
+This file documents Katana DOM contracts used by Katana Helpers. Validate these
+against the real Chrome tab when changing workflow automation because the Codex
+in-app browser does not run the installed Tampermonkey script.
+
+## Sales Order Row Manufacturing
+
+- Sales order row action button: `button[data-testid="soRowActionsMenu-button"]`.
+- The Katana Helpers `EX` button is inserted immediately before that native row
+  action button in the same parent container.
+- Row action menu items observed on the fake Codex order:
+  - `li[data-testid="soRowActionsMenu-item-makeToOrder"]` - "Make to order".
+  - `li[data-testid="soRowActionsMenu-item-makeInBatch"]` - "Make to stock".
+  - `li[data-testid="soRowActionsMenu-item-whichOneToChoose"]`.
+  - `li[data-testid="soRowActionsMenu-item-addAttribute"]`.
+  - `li[data-testid="soRowActionsMenu-item-delete"]`.
+- `Make to stock` opens the native quick-add manufacturing order dialog.
+
+## New Manufacturing Order Dialog
+
+- Dialog root: `div[role="dialog"]`.
+- Dialog content marker: `[data-testid="manufacturingOrderLayoutContent"]`.
+- Dialog title: `[data-testid="quickAddBulkOrdersDialogTitle"]`, usually
+  "New manufacturing order".
+- Product label: `[data-testid="singleMOLayoutProductNameInput"]`.
+- Quantity input: `input[data-testid="singleMOLayoutQuantityInput"]`.
+  - Also has `name="quantity"` and `type="text"`.
+  - Katana's observed default was `1`, even when the sales order row quantity
+    was `5`.
+- Calculated stock label/value:
+  - `[data-testid="singleMOLayoutStockLabel"]`.
+  - `[data-testid="singleMOLayoutStockLabelValue"]`.
+- MO number field wrapper: `[data-testid="singleMOLayoutOrderNameField"]`.
+  - The input inside has `name="orderNo"`.
+- Native action buttons:
+  - Cancel: `button[data-testid="cancelButton"]`.
+  - Create: `button[data-testid="createAndCloseOrderButton"]`.
+  - Create and view: `button[data-testid="createAndOpenOrderButton"]`.
+- The native action buttons share one parent with Material UI classes similar
+  to `MuiDialogActions-root-* MuiDialogActions-spacing-*`.
+- Katana Helpers mounts `button#kh-create-ultra-mo-btn` into that same action
+  parent and leaves the native buttons unchanged.
+
+## Manufacturing Order Completion
+
+- Entity status button: `button[data-testid="menuButton-entityStatus"]`.
+- MO Done menu item: `li[data-testid="menuListItem-entityStatus-done"]`.
+- Existing helper flow opens the status menu, clicks Done, and waits until the
+  entity status context reads manufacturing/done.
+
+## Ingredients Grid Availability
+
+- Ingredients grid root: `#ingredients-grid`.
+- Ultra EX scans the AG Grid body under:
+  - `#ingredients-grid .ag-body.ag-layout-auto-height`, falling back to
+    `#ingredients-grid .ag-body`.
+  - `.ag-body-viewport`.
+  - `.ag-center-cols-viewport`.
+- Availability cells use `role="gridcell"` and `col-id="availability3"`.
+- Availability text is classified as:
+  - Empty text: loading.
+  - Text containing "not available": not available.
+  - Text containing "in stock": in stock.
+  - Anything else: unknown.
+- Ultra EX scrolls the grid viewport and merges statuses by row key. Row keys
+  come from `row-id`, `row-index`, `aria-rowindex`, `dataset.rowId`,
+  `dataset.rowIndex`, or `style.top`.
+
+## Async And Fragility Notes
+
+- The manufacturing dialog can initially render only "Loading ..."; wait for
+  both the quantity input and `Create and view` button before injecting helper
+  UI.
+- Click-savings accounting is intentionally split by successful phase:
+  - Double-click Ultra EX keeps the legacy values: `SAVED_CLICKS_EX_NORMAL`
+    after the qty=1 MO opens, then `SAVED_CLICKS_ULTRA_EXTRA` only after Ultra
+    marks Done and returns.
+  - Single-click manual EX counts `SAVED_CLICKS_EX_MANUAL_DIALOG` only after
+    the native Make to stock dialog is open and the `Create + Ultra` button is
+    injected. This is estimated as two saved clicks: open row actions and choose
+    Make to stock. Quantity entry is not counted because the user still does it.
+  - Single-click manual EX counts `SAVED_CLICKS_ULTRA_EXTRA` only if
+    `Create + Ultra` opens the MO and Ultra successfully marks it Done. This is
+    estimated as two saved actions: set Done and return to the sales order.
+  - The `Create + Ultra` click itself is not counted as a saved click because it
+    replaces the native `Create and view` click the user would otherwise make.
+- Material UI class suffixes are generated and should not be used as stable
+  selectors.
+- AG Grid virtualizes rows, so availability scanning must scroll the grid
+  rather than only reading initially visible rows.
+- The dev userscript loads one server-side runtime and live bundle from
+  `http://127.0.0.1:5174/`; normal source changes require
+  `node tools/build-release.js` plus a Katana page refresh, not a Tampermonkey
+  metadata edit.
+- Do not update `devBootstrapVersion` in `tools/build-release.js` unless the
+  dev bootstrap userscript code or metadata actually changed. A normal app
+  version bump for source modules should leave the bootstrap version untouched,
+  otherwise Tampermonkey will report an unnecessary bootstrap update.

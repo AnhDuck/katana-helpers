@@ -10,6 +10,7 @@
 - The installed dev userscript loads the server-side dev runtime, and that runtime loads one live bundle from the local dev server on each page load; avoid branch-based GitHub raw loaders, per-module `@require`, or sequential per-file fetches for dev.
 - Only change dev userscript metadata (`@match`, `@grant`, `@connect`, update URLs, etc.) when unavoidable. If metadata changes, say clearly that the user must approve/install that one Tampermonkey update because agents cannot operate the extension editor directly.
 - Bump the app/release version in `tools/build-release.js` and `src/core/constants.js` for every user-facing behavior or UI change.
+- Do not bump `devBootstrapVersion` in `tools/build-release.js` unless the generated dev bootstrap userscript itself changed. Source-module, UI, selector, settings, feature, runtime, or release-bundle changes should not create a Tampermonkey bootstrap update prompt when the bootstrap loader code is unchanged.
 
 Browser/tooling rules for agents:
 

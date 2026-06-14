@@ -2,7 +2,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.9.0",
+    version: "2.10.0",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -17,6 +17,7 @@
       MO_TIMER: "kh-mo-timer",
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
+      BTN_CREATE_ULTRA_MO: "kh-create-ultra-mo-btn",
       BTN_CREATE_PO: "kh-create-po-btn",
       BTN_STATUS_HELPER: "kh-status-helper-btn",
       BTN_MO_DONE_RETURN: "kh-mo-done-return-btn",
@@ -55,6 +56,8 @@
       DIALOG_CLOSE_BTN: 'div[role="dialog"] button#closeButton',
       SO_ROW_ACTIONS_BTN: 'button[data-testid="soRowActionsMenu-button"]',
       SO_MENU_MAKE_IN_BATCH: 'li[data-testid="soRowActionsMenu-item-makeInBatch"]',
+      MO_DIALOG: 'div[role="dialog"]',
+      MO_DIALOG_CONTENT: '[data-testid="manufacturingOrderLayoutContent"]',
       BATCH_QTY_INPUT: 'input[data-testid="singleMOLayoutQuantityInput"]',
       CREATE_AND_OPEN: 'button[data-testid="createAndOpenOrderButton"]',
       HEADER_SALES_ORDER: '[data-testid="headerNameSALESORDER"]',
@@ -73,6 +76,7 @@
     CONFIG: {
       DOUBLE_CLICK_WINDOW_MS: 250,
       SAVED_CLICKS_EX_NORMAL: 4,
+      SAVED_CLICKS_EX_MANUAL_DIALOG: 2,
       SAVED_CLICKS_ULTRA_EXTRA: 2,
       ULTRA_MAX_WAIT_FOR_READY_MS: 7000,
       ULTRA_READY_POLL_MS: 140,
