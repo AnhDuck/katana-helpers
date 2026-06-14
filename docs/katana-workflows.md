@@ -43,6 +43,33 @@ in-app browser does not run the installed Tampermonkey script.
 - Native popup Make button: `button[data-testid="makeOrderButton"]`.
 - The popup can initially show `Loading...`; wait for popup grid rows before
   reading ingredient data.
+- Feasibility notes for opening Inventory Intel from the Katana Helpers
+  missing-ingredients side panel are documented in
+  `docs/side-panel-inventory-intel-feasibility.md`.
+
+## Inventory Intel Dialog
+
+- Trigger observed in Chrome: the native missing-ingredients popup has an
+  unlabelled button inside each `missingQuantity` cell.
+- The icon button has no stable `data-testid`; match the popup row by
+  ingredient name and missing quantity, then click
+  `[role="gridcell"][col-id="missingQuantity"] button`.
+- Inventory Intel opens as a second `[role="dialog"]` over the
+  missing-ingredients dialog.
+- Dialog title wrapper: `[data-testid="headerInventoryIntel"]`.
+- Product name: `[data-testid="cardHeaderName"]` or
+  `[data-testid="headerNameUNDEFINED"]`.
+- Close button: `button[data-testid="headerInventoryIntelCloseButton"]`.
+- Export button: `button[data-testid="IICExport"]`.
+- Native Make button: `button[data-testid="makeOrderButton"]`.
+- Movement grid columns observed in Chrome:
+  - `movementDate`.
+  - `causedBy`.
+  - `quantityChange`.
+  - `valuePerUnit`.
+  - `balanceAfter`.
+  - `valueInStockAfter`.
+  - `averageCostAfter`.
 
 ## New Manufacturing Order Dialog
 
