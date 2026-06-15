@@ -41,8 +41,15 @@ in-app browser does not run the installed Tampermonkey script.
   - `[data-testid="number-renderer-value-missingQuantity"]`.
   - `[data-testid="number-renderer-suffix-missingQuantity"]`.
 - Native popup Make button: `button[data-testid="makeOrderButton"]`.
+- Clicking a native popup `Make` button opens a nested quick-add
+  manufacturing order dialog for that missing ingredient. The
+  missing-ingredients popup remains open underneath.
+- Katana Helpers does not add EX buttons inside the native popup grid.
 - The popup can initially show `Loading...`; wait for popup grid rows before
   reading ingredient data.
+- Feasibility notes for adding a helper button after clicking the native popup
+  `Make` button are documented in
+  `docs/native-make-create-ex-feasibility.md`.
 - Feasibility notes for opening Inventory Intel from the Katana Helpers
   missing-ingredients side panel are documented in
   `docs/side-panel-inventory-intel-feasibility.md`.
@@ -93,8 +100,19 @@ in-app browser does not run the installed Tampermonkey script.
   - Create and view: `button[data-testid="createAndOpenOrderButton"]`.
 - The native action buttons share one parent with Material UI classes similar
   to `MuiDialogActions-root-* MuiDialogActions-spacing-*`.
-- Katana Helpers mounts `button#kh-create-ultra-mo-btn` into that same action
-  parent and leaves the native buttons unchanged.
+- Katana Helpers leaves the native buttons unchanged and can mount helper
+  buttons into that same action parent:
+  - `button#kh-create-ultra-mo-btn` - shown for the sales-order row single-click
+    `EX` flow after Katana Helpers opens Make to stock.
+  - `button#kh-create-ex-mo-btn` - shown when the user manually opens the
+    Ingredients popup, clicks a native popup-row `Make`, and Katana opens a
+    nested quick-add MO dialog for that missing ingredient.
+- `button#kh-create-ex-mo-btn` is detected by the presence of both:
+  - the quick-add MO dialog with `button[data-testid="createAndOpenOrderButton"]`
+  - the underlying `Missing and expected ingredients for` dialog
+- Both helper create buttons click Katana's native `Create and view` button,
+  wait for the MO page, run Ultra ingredient verification, and return to the
+  sales order if Ultra completes.
 
 ## Manufacturing Order Completion
 

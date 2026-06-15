@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers
 // @namespace    https://factory.katanamrp.com/
-// @version      2.11.0
+// @version      2.12.0
 // @description  Workflow helpers for Katana MRP.
 // @match        https://factory.katanamrp.com/*
 // @updateURL    https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/userscript/katana-helpers.release.user.js
@@ -16,7 +16,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.11.0",
+    version: "2.12.0",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -34,6 +34,7 @@
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
       BTN_CREATE_ULTRA_MO: "kh-create-ultra-mo-btn",
+      BTN_CREATE_EX_MO: "kh-create-ex-mo-btn",
       SO_INGREDIENTS_PANEL: "kh-so-ingredients-panel",
       BTN_CREATE_PO: "kh-create-po-btn",
       BTN_STATUS_HELPER: "kh-status-helper-btn",
@@ -458,7 +459,8 @@
       #${constants.IDS.BTN_CREATE_MO}:hover { background: #6d28d9 !important; border-color: #5b21b6 !important; }
       #${constants.IDS.BTN_CREATE_MO}:active { background: #5b21b6 !important; transform: translateY(0.5px) !important; }
 
-      #${constants.IDS.BTN_CREATE_ULTRA_MO} {
+      #${constants.IDS.BTN_CREATE_ULTRA_MO},
+      #${constants.IDS.BTN_CREATE_EX_MO} {
         background: #dc2626 !important;
         color: #fff !important;
         border: 1px solid #b91c1c !important;
@@ -471,10 +473,14 @@
         line-height: 1.2 !important;
         white-space: nowrap !important;
       }
-      #${constants.IDS.BTN_CREATE_ULTRA_MO}:hover { background: #b91c1c !important; border-color: #991b1b !important; }
-      #${constants.IDS.BTN_CREATE_ULTRA_MO}:active { background: #991b1b !important; transform: translateY(0.5px) !important; }
+      #${constants.IDS.BTN_CREATE_ULTRA_MO}:hover,
+      #${constants.IDS.BTN_CREATE_EX_MO}:hover { background: #b91c1c !important; border-color: #991b1b !important; }
+      #${constants.IDS.BTN_CREATE_ULTRA_MO}:active,
+      #${constants.IDS.BTN_CREATE_EX_MO}:active { background: #991b1b !important; transform: translateY(0.5px) !important; }
       #${constants.IDS.BTN_CREATE_ULTRA_MO}[data-kh-running="1"],
-      #${constants.IDS.BTN_CREATE_ULTRA_MO}:disabled {
+      #${constants.IDS.BTN_CREATE_ULTRA_MO}:disabled,
+      #${constants.IDS.BTN_CREATE_EX_MO}[data-kh-running="1"],
+      #${constants.IDS.BTN_CREATE_EX_MO}:disabled {
         opacity: 0.68 !important;
         cursor: progress !important;
       }
@@ -2429,6 +2435,14 @@
     return content?.closest?.(constants.SELECTORS.MO_DIALOG) || null;
   };
 
+  const findNativeIngredientsMakeMoDialog = () => {
+    if (manualUltraOriginUrl) return null;
+    const dialog = findMoDialog();
+    if (!dialog) return null;
+    if (!findIngredientsPopupDialog()) return null;
+    return dialog;
+  };
+
   const clearManualUltraOrigin = () => {
     manualUltraOriginUrl = null;
     manualIngredientsPreview = null;
@@ -2575,14 +2589,13 @@
   const setCreateUltraRunning = (btn, on) => {
     btn.setAttribute("data-kh-running", on ? "1" : "0");
     btn.disabled = !!on;
-    btn.textContent = on ? "Creating..." : "Create + Ultra";
+    btn.textContent = on ? "Creating..." : (btn.dataset.khIdleText || "Create + Ultra");
   };
 
-  const runManualUltraCreateFlow = async (btn) => {
-    const originUrl = manualUltraOriginUrl || window.location.href;
+  const runCreateAndUltraFlow = async ({ btn, originUrl, label, afterMoOpen }) => {
     const createAndOpen = findMoDialog()?.querySelector(constants.SELECTORS.CREATE_AND_OPEN);
     if (!createAndOpen) {
-      kh.ui.toast.showToast("Create + Ultra stopped: couldn't find Katana's Create and view button.", 5200);
+      kh.ui.toast.showToast(`${label} stopped: couldn't find Katana's Create and view button.`, 5200);
       return;
     }
 
@@ -2599,13 +2612,13 @@
       try {
         await utils.waitForCondition(() => window.location.pathname.includes("manufacturing"), 5000, 100);
       } catch {
-        kh.ui.toast.showToast("Create + Ultra stopped: MO did not open. Finish manually.", 5600);
+        kh.ui.toast.showToast(`${label} stopped: MO did not open. Finish manually.`, 5600);
         setCreateUltraRunning(btn, false);
         return;
       }
     }
 
-    clearManualUltraOrigin();
+    afterMoOpen?.();
 
     try {
       const ultraRes = await kh.features.ultraEx.runUltraAfterMoOpen(originUrl);
@@ -2613,9 +2626,26 @@
         kh.ui.hud.incrementCounters(constants.CONFIG.SAVED_CLICKS_ULTRA_EXTRA);
       }
     } catch (err) {
-      utils.log("Create + Ultra failed:", err);
-      kh.ui.toast.showToast("Create + Ultra stopped unexpectedly. Finish manually.", 5600);
+      utils.log(`${label} failed:`, err);
+      kh.ui.toast.showToast(`${label} stopped unexpectedly. Finish manually.`, 5600);
     }
+  };
+
+  const runManualUltraCreateFlow = async (btn) => {
+    await runCreateAndUltraFlow({
+      btn,
+      originUrl: manualUltraOriginUrl || window.location.href,
+      label: "Create + Ultra",
+      afterMoOpen: clearManualUltraOrigin,
+    });
+  };
+
+  const runNativeMakeCreateExFlow = async (btn) => {
+    await runCreateAndUltraFlow({
+      btn,
+      originUrl: window.location.href,
+      label: "Create + EX",
+    });
   };
 
   const bindNativeDialogButtonClear = (dialog) => {
@@ -2634,8 +2664,6 @@
   };
 
   const ensureCreateUltraButton = () => {
-    if (!manualUltraOriginUrl) return;
-
     const dialog = findMoDialog();
     if (!dialog) return;
 
@@ -2645,22 +2673,55 @@
     const actions = createAndOpen.parentElement;
     if (!actions) return;
 
-    bindNativeDialogButtonClear(dialog);
+    if (manualUltraOriginUrl) {
+      dialog.querySelector(`#${constants.IDS.BTN_CREATE_EX_MO}`)?.remove();
+      bindNativeDialogButtonClear(dialog);
 
-    let btn = dialog.querySelector(`#${constants.IDS.BTN_CREATE_ULTRA_MO}`);
+      let btn = dialog.querySelector(`#${constants.IDS.BTN_CREATE_ULTRA_MO}`);
+      if (!btn) {
+        btn = utils.createButton({
+          id: constants.IDS.BTN_CREATE_ULTRA_MO,
+          text: "Create + Ultra",
+          title: "Create and view this MO, verify ingredients, mark Done, and return to the sales order.",
+          onClick: (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (btn.getAttribute("data-kh-running") === "1") return;
+            runManualUltraCreateFlow(btn);
+          },
+        });
+        btn.dataset.khIdleText = "Create + Ultra";
+      }
+
+      if (btn.parentElement !== actions) {
+        actions.appendChild(btn);
+      }
+      return;
+    }
+
+    dialog.querySelector(`#${constants.IDS.BTN_CREATE_ULTRA_MO}`)?.remove();
+
+    if (!findNativeIngredientsMakeMoDialog()) {
+      dialog.querySelector(`#${constants.IDS.BTN_CREATE_EX_MO}`)?.remove();
+      return;
+    }
+
+    let btn = dialog.querySelector(`#${constants.IDS.BTN_CREATE_EX_MO}`);
     if (!btn) {
       btn = utils.createButton({
-        id: constants.IDS.BTN_CREATE_ULTRA_MO,
-        text: "Create + Ultra",
-        title: "Create and view this MO, verify ingredients, mark Done, and return to the sales order.",
+        id: constants.IDS.BTN_CREATE_EX_MO,
+        text: "Create + EX",
+        title: "Create and view this ingredient MO, verify ingredients, mark Done, and return to the sales order.",
         onClick: (event) => {
           event.preventDefault();
           event.stopPropagation();
 
           if (btn.getAttribute("data-kh-running") === "1") return;
-          runManualUltraCreateFlow(btn);
+          runNativeMakeCreateExFlow(btn);
         },
       });
+      btn.dataset.khIdleText = "Create + EX";
     }
 
     if (btn.parentElement !== actions) {

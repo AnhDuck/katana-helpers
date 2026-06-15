@@ -2,7 +2,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.11.0",
+    version: "2.12.0",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -20,6 +20,7 @@
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
       BTN_CREATE_ULTRA_MO: "kh-create-ultra-mo-btn",
+      BTN_CREATE_EX_MO: "kh-create-ex-mo-btn",
       SO_INGREDIENTS_PANEL: "kh-so-ingredients-panel",
       BTN_CREATE_PO: "kh-create-po-btn",
       BTN_STATUS_HELPER: "kh-status-helper-btn",
