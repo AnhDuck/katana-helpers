@@ -14,7 +14,7 @@
   };
 
   const HAS_STORAGE = storageAvailable();
-  let mem = { total: 0, byDate: {}, supplierButtons: {}, soIngredientsPreviewEnabled: true };
+  let mem = { total: 0, byDate: {}, supplierButtons: {}, soIngredientsPreviewEnabled: true, moQtyAutofillEnabled: true };
 
   const readTotal = () => {
     if (!HAS_STORAGE) return mem.total;
@@ -81,6 +81,21 @@
       return;
     }
     localStorage.setItem(constants.KEYS.SO_INGREDIENTS_PREVIEW_ENABLED, next);
+  };
+
+  const readMoQtyAutofillEnabled = () => {
+    if (!HAS_STORAGE) return mem.moQtyAutofillEnabled;
+    const raw = localStorage.getItem(constants.KEYS.MO_QTY_AUTOFILL_ENABLED);
+    return raw == null ? true : raw === "1";
+  };
+
+  const writeMoQtyAutofillEnabled = (enabled) => {
+    const next = enabled ? "1" : "0";
+    if (!HAS_STORAGE) {
+      mem.moQtyAutofillEnabled = enabled;
+      return;
+    }
+    localStorage.setItem(constants.KEYS.MO_QTY_AUTOFILL_ENABLED, next);
   };
 
   const upsertSupplierButton = (supplierName, data) => {
@@ -172,6 +187,8 @@
     writeSupplierButtons,
     readSoIngredientsPreviewEnabled,
     writeSoIngredientsPreviewEnabled,
+    readMoQtyAutofillEnabled,
+    writeMoQtyAutofillEnabled,
     upsertSupplierButton,
     normalizeReturnUrl,
     isSameUrl,

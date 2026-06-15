@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers
 // @namespace    https://factory.katanamrp.com/
-// @version      2.12.0
+// @version      2.13.0
 // @description  Workflow helpers for Katana MRP.
 // @match        https://factory.katanamrp.com/*
 // @updateURL    https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/userscript/katana-helpers.release.user.js
@@ -16,7 +16,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.12.0",
+    version: "2.13.0",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -25,11 +25,13 @@
       SO_TIMERS: "kh_so_timer_state",
       SUPPLIER_BUTTONS: "kh_supplier_buttons",
       SO_INGREDIENTS_PREVIEW_ENABLED: "kh_so_ingredients_preview_enabled",
+      MO_QTY_AUTOFILL_ENABLED: "kh_mo_qty_autofill_enabled",
     },
     IDS: {
       STYLE: "kh-style",
       HUD: "kh-hud",
       HUD_SO_INGREDIENTS_TOGGLE: "kh-so-ingredients-toggle",
+      HUD_MO_QTY_AUTOFILL_TOGGLE: "kh-mo-qty-autofill-toggle",
       MO_TIMER: "kh-mo-timer",
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
@@ -86,6 +88,9 @@
       HEADER_SALES_ORDER: '[data-testid="headerNameSALESORDER"]',
       SO_ORDER_FIELD: ".soOrderNo",
       SO_ORDER_INPUT: 'input[name="orderNo"]',
+      MO_PRODUCT_INPUT: 'input[data-testid="katanaAutocompleteInput"]',
+      MO_PLANNED_QTY_INPUT: 'input[data-testid="mo-planned-quantity"]',
+      MO_HEADER_NAME: '[data-testid="headerNameMANUFACTURINGORDER"]',
     },
     GRID: {
       INGREDIENTS_ID: "#ingredients-grid",
@@ -110,6 +115,9 @@
       PO_SUPPLIER_BUTTON_TEXT: "#fff",
       PO_SUPPLIER_BUTTON_DISABLED_BG: "#e2e8f0",
       PO_SUPPLIER_BUTTON_DISABLED_TEXT: "#64748b",
+      MO_QTY_AUTOFILL_POLL_MS: 180,
+      MO_QTY_AUTOFILL_SETTLE_MS: 650,
+      MO_QTY_AUTOFILL_HEADER_WAIT_MS: 2400,
     },
   };
 })();
@@ -265,7 +273,7 @@
   };
 
   const HAS_STORAGE = storageAvailable();
-  let mem = { total: 0, byDate: {}, supplierButtons: {}, soIngredientsPreviewEnabled: true };
+  let mem = { total: 0, byDate: {}, supplierButtons: {}, soIngredientsPreviewEnabled: true, moQtyAutofillEnabled: true };
 
   const readTotal = () => {
     if (!HAS_STORAGE) return mem.total;
@@ -332,6 +340,21 @@
       return;
     }
     localStorage.setItem(constants.KEYS.SO_INGREDIENTS_PREVIEW_ENABLED, next);
+  };
+
+  const readMoQtyAutofillEnabled = () => {
+    if (!HAS_STORAGE) return mem.moQtyAutofillEnabled;
+    const raw = localStorage.getItem(constants.KEYS.MO_QTY_AUTOFILL_ENABLED);
+    return raw == null ? true : raw === "1";
+  };
+
+  const writeMoQtyAutofillEnabled = (enabled) => {
+    const next = enabled ? "1" : "0";
+    if (!HAS_STORAGE) {
+      mem.moQtyAutofillEnabled = enabled;
+      return;
+    }
+    localStorage.setItem(constants.KEYS.MO_QTY_AUTOFILL_ENABLED, next);
   };
 
   const upsertSupplierButton = (supplierName, data) => {
@@ -423,6 +446,8 @@
     writeSupplierButtons,
     readSoIngredientsPreviewEnabled,
     writeSoIngredientsPreviewEnabled,
+    readMoQtyAutofillEnabled,
+    writeMoQtyAutofillEnabled,
     upsertSupplierButton,
     normalizeReturnUrl,
     isSameUrl,
@@ -1007,6 +1032,10 @@
           <input id="${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}" type="checkbox">
           <span>Ingredient preview</span>
         </label>
+        <label class="kh-hud-toggle" title="Auto-fill planned quantity on manufacturing orders from product labels like 15pcs-STD or 28 pcs-STD">
+          <input id="${constants.IDS.HUD_MO_QTY_AUTOFILL_TOGGLE}" type="checkbox">
+          <span>MO qty autofill</span>
+        </label>
         <span class="kh-hud-text">
           <span class="kh-hud-total" title="Start date: January 3rd, 2026">Total clicks saved: <strong id="kh-total">0</strong></span> | Clicks saved today: <strong id="kh-today">0</strong>
         </span>
@@ -1024,6 +1053,11 @@
         storage.writeSoIngredientsPreviewEnabled(event.target.checked);
         kh.features?.soEx?.ensureSoExButtons?.();
       }, { capture: true });
+
+      hud.querySelector(`#${constants.IDS.HUD_MO_QTY_AUTOFILL_TOGGLE}`)?.addEventListener("change", (event) => {
+        storage.writeMoQtyAutofillEnabled(event.target.checked);
+        kh.features?.moQuantityAutofill?.handleSettingChange?.();
+      }, { capture: true });
     }
 
     updateHud();
@@ -1036,6 +1070,7 @@
     const totalEl = hud.querySelector("#kh-total");
     const todayEl = hud.querySelector("#kh-today");
     const previewToggle = hud.querySelector(`#${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}`);
+    const moQtyAutofillToggle = hud.querySelector(`#${constants.IDS.HUD_MO_QTY_AUTOFILL_TOGGLE}`);
 
     const total = storage.readTotal();
     const ymd = utils.getPacificYMD();
@@ -1045,6 +1080,7 @@
     if (totalEl) totalEl.textContent = String(total);
     if (todayEl) todayEl.textContent = String(today);
     if (previewToggle) previewToggle.checked = storage.readSoIngredientsPreviewEnabled();
+    if (moQtyAutofillToggle) moQtyAutofillToggle.checked = storage.readMoQtyAutofillEnabled();
   };
 
   const incrementCounters = (delta = 1) => {
@@ -1896,6 +1932,175 @@
 
   kh.features = kh.features || {};
   kh.features.doneAndReturn = { ensureMoDoneReturnButton };
+})();
+
+
+/* src/features/moQuantityAutofill.js */
+(() => {
+  const kh = window.KatanaHelpers = window.KatanaHelpers || {};
+  const { constants, storage, utils } = kh;
+
+  const state = {
+    intervalId: 0,
+    productInput: null,
+    qtyInput: null,
+    lastSeenLabel: "",
+    lastSeenAt: 0,
+    lastHeaderMismatchAt: 0,
+    lastAppliedLabel: "",
+    lastAppliedQty: "",
+    manualOverrideLabel: "",
+    internalWriteDepth: 0,
+  };
+
+  const isMoPage = () => window.location.pathname.startsWith("/manufacturingorder");
+
+  const getProductInput = () => document.querySelector(constants.SELECTORS.MO_PRODUCT_INPUT);
+  const getQtyInput = () => document.querySelector(constants.SELECTORS.MO_PLANNED_QTY_INPUT);
+  const getHeaderName = () => document.querySelector(constants.SELECTORS.MO_HEADER_NAME);
+
+  const normalizeProductLabel = (raw) => {
+    const text = String(raw || "").replace(/\s+/g, " ").trim();
+    return text;
+  };
+
+  const extractBatchQty = (rawLabel) => {
+    const label = normalizeProductLabel(rawLabel);
+    if (!label) return null;
+
+    const namePortion = label.includes("]") ? label.split("]").slice(1).join("]").trim() : label;
+
+    const stdMatch = namePortion.match(/(^|[\s(/-])(\d+)\s*pcs-std\b/i);
+    if (stdMatch) return parseInt(stdMatch[2], 10);
+
+    const leadingQtyMatch = namePortion.match(/^(\d+)\s+/);
+    if (leadingQtyMatch) return parseInt(leadingQtyMatch[1], 10);
+
+    return null;
+  };
+
+  const getCurrentSelectedLabel = () => normalizeProductLabel(getProductInput()?.value || "");
+
+  const markManualOverride = () => {
+    if (state.internalWriteDepth > 0) return;
+    const label = getCurrentSelectedLabel();
+    if (!label) return;
+    state.manualOverrideLabel = label;
+  };
+
+  const ensureQtyListeners = (qtyInput) => {
+    if (!qtyInput || qtyInput.dataset.khMoQtyAutofillBound === "1") return;
+    qtyInput.dataset.khMoQtyAutofillBound = "1";
+    qtyInput.addEventListener("input", markManualOverride, { capture: true });
+    qtyInput.addEventListener("change", markManualOverride, { capture: true });
+  };
+
+  const resetAutofillState = () => {
+    state.lastSeenLabel = "";
+    state.lastSeenAt = 0;
+    state.lastHeaderMismatchAt = 0;
+    state.lastAppliedLabel = "";
+    state.lastAppliedQty = "";
+    state.manualOverrideLabel = "";
+  };
+
+  const shouldApplyToValue = (currentValue, nextQty) => {
+    const nextText = String(nextQty);
+    const current = String(currentValue || "").trim();
+
+    if (!current) return true;
+    if (current === nextText) return false;
+    if (current === "1") return true;
+    if (state.lastAppliedQty && current === state.lastAppliedQty) return true;
+    return false;
+  };
+
+  const applyQty = (qtyInput, qty, label) => {
+    const nextText = String(qty);
+    state.internalWriteDepth += 1;
+    try {
+      utils.setReactInputValue(qtyInput, nextText);
+    } finally {
+      state.internalWriteDepth = Math.max(0, state.internalWriteDepth - 1);
+    }
+    state.lastAppliedLabel = label;
+    state.lastAppliedQty = nextText;
+    qtyInput.dataset.khMoQtyAutofillLabel = label;
+    qtyInput.dataset.khMoQtyAutofillValue = nextText;
+  };
+
+  const tick = () => {
+    if (!isMoPage()) {
+      resetAutofillState();
+      return;
+    }
+    if (!storage.readMoQtyAutofillEnabled()) return;
+
+    const productInput = getProductInput();
+    const qtyInput = getQtyInput();
+    if (!productInput || !qtyInput) return;
+
+    state.productInput = productInput;
+    state.qtyInput = qtyInput;
+    ensureQtyListeners(qtyInput);
+
+    const label = normalizeProductLabel(productInput.value);
+    const now = Date.now();
+
+    if (label !== state.lastSeenLabel) {
+      state.lastSeenLabel = label;
+      state.lastSeenAt = now;
+      state.lastHeaderMismatchAt = 0;
+      if (state.manualOverrideLabel && state.manualOverrideLabel !== label) {
+        state.manualOverrideLabel = "";
+      }
+    }
+
+    const batchQty = extractBatchQty(label);
+    if (!batchQty || !Number.isFinite(batchQty) || batchQty <= 0) return;
+    if (now - state.lastSeenAt < constants.CONFIG.MO_QTY_AUTOFILL_SETTLE_MS) return;
+    if (document.activeElement === qtyInput) return;
+    if (state.manualOverrideLabel === label) return;
+
+    const headerText = normalizeProductLabel(getHeaderName()?.textContent || "");
+    if (headerText && !utils.normText(headerText).includes(utils.normText(label))) {
+      if (!state.lastHeaderMismatchAt) state.lastHeaderMismatchAt = now;
+      if (now - state.lastHeaderMismatchAt < constants.CONFIG.MO_QTY_AUTOFILL_HEADER_WAIT_MS) return;
+    } else {
+      state.lastHeaderMismatchAt = 0;
+    }
+
+    const currentValue = String(qtyInput.value || "").trim();
+    if (!shouldApplyToValue(currentValue, batchQty)) return;
+
+    applyQty(qtyInput, batchQty, label);
+  };
+
+  const start = () => {
+    if (state.intervalId) return;
+    state.intervalId = window.setInterval(tick, constants.CONFIG.MO_QTY_AUTOFILL_POLL_MS);
+  };
+
+  const handleSettingChange = () => {
+    if (!storage.readMoQtyAutofillEnabled()) {
+      resetAutofillState();
+      return;
+    }
+    state.lastSeenAt = 0;
+    state.lastHeaderMismatchAt = 0;
+  };
+
+  const ensureMoQuantityAutofill = () => {
+    start();
+    tick();
+  };
+
+  kh.features = kh.features || {};
+  kh.features.moQuantityAutofill = {
+    ensureMoQuantityAutofill,
+    handleSettingChange,
+    extractBatchQty,
+  };
 })();
 
 
@@ -3352,6 +3557,7 @@
     kh.features.createPo.ensureCreatePoButton();
     kh.features.statusHelper.ensureEntityStatusHelper();
     kh.features.doneAndReturn.ensureMoDoneReturnButton();
+    kh.features.moQuantityAutofill.ensureMoQuantityAutofill();
     kh.features.soEx.ensureSoExButtons();
     kh.features.etsyButton.ensureEtsyOrderButton();
     kh.features.poSupplierShortcut.ensureSupplierShortcutButton();

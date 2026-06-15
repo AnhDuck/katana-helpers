@@ -2,7 +2,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.12.0",
+    version: "2.13.0",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -11,11 +11,13 @@
       SO_TIMERS: "kh_so_timer_state",
       SUPPLIER_BUTTONS: "kh_supplier_buttons",
       SO_INGREDIENTS_PREVIEW_ENABLED: "kh_so_ingredients_preview_enabled",
+      MO_QTY_AUTOFILL_ENABLED: "kh_mo_qty_autofill_enabled",
     },
     IDS: {
       STYLE: "kh-style",
       HUD: "kh-hud",
       HUD_SO_INGREDIENTS_TOGGLE: "kh-so-ingredients-toggle",
+      HUD_MO_QTY_AUTOFILL_TOGGLE: "kh-mo-qty-autofill-toggle",
       MO_TIMER: "kh-mo-timer",
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
@@ -72,6 +74,9 @@
       HEADER_SALES_ORDER: '[data-testid="headerNameSALESORDER"]',
       SO_ORDER_FIELD: ".soOrderNo",
       SO_ORDER_INPUT: 'input[name="orderNo"]',
+      MO_PRODUCT_INPUT: 'input[data-testid="katanaAutocompleteInput"]',
+      MO_PLANNED_QTY_INPUT: 'input[data-testid="mo-planned-quantity"]',
+      MO_HEADER_NAME: '[data-testid="headerNameMANUFACTURINGORDER"]',
     },
     GRID: {
       INGREDIENTS_ID: "#ingredients-grid",
@@ -96,6 +101,9 @@
       PO_SUPPLIER_BUTTON_TEXT: "#fff",
       PO_SUPPLIER_BUTTON_DISABLED_BG: "#e2e8f0",
       PO_SUPPLIER_BUTTON_DISABLED_TEXT: "#64748b",
+      MO_QTY_AUTOFILL_POLL_MS: 180,
+      MO_QTY_AUTOFILL_SETTLE_MS: 650,
+      MO_QTY_AUTOFILL_HEADER_WAIT_MS: 2400,
     },
   };
 })();
