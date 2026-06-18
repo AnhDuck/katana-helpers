@@ -164,7 +164,9 @@ in-app browser does not run the installed Tampermonkey script.
     the status change succeeds. `Done & Return` counts two when it also triggers
     a return navigation, and one when it can only mark Done.
   - External shortcuts (`Etsy`, supplier shortcuts, and `SimplyPrint`) count
-    three saved clicks only when the browser actually opens the new tab/window.
+    three saved clicks as soon as the helper shortcut is clicked. Browser popup
+    handle reporting is not used for accounting because `window.open()` can
+    return `null` even when the user-facing shortcut path is still handled.
 - Material UI class suffixes are generated and should not be used as stable
   selectors.
 - AG Grid virtualizes rows, so availability scanning must scroll the grid

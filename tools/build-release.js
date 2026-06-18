@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const version = "2.14.1";
+const version = "2.14.2";
 const devBootstrapVersion = "2.9.0-dev.1";
 const devOrigin = process.env.KATANA_HELPERS_DEV_ORIGIN || "http://127.0.0.1:5174";
 

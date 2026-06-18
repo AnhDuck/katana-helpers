@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers
 // @namespace    https://factory.katanamrp.com/
-// @version      2.14.1
+// @version      2.14.2
 // @description  Workflow helpers for Katana MRP.
 // @match        https://factory.katanamrp.com/*
 // @updateURL    https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/userscript/katana-helpers.release.user.js
@@ -16,7 +16,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.14.1",
+    version: "2.14.2",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -3376,13 +3376,9 @@
         setTimeout(() => btn.removeAttribute("data-kh-clicked"), 220);
         const orderId = getEtsyOrderIdFromHeader();
         const url = orderId ? `${constants.URLS.ETSY_ORDER}?order_id=${orderId}` : constants.URLS.ETSY_ORDER;
-        const win = window.open(url, "_blank", "noopener,noreferrer");
-        if (!win) {
-          kh.ui.toast.showToast("Etsy shortcut was blocked by the browser.", 3600);
-          return;
-        }
-        win.focus?.();
         kh.ui.hud.incrementCounters(3);
+        const win = window.open(url, "_blank", "noopener,noreferrer");
+        win.focus?.();
       },
     });
 
@@ -3689,13 +3685,9 @@
             });
             return;
           }
-          const win = window.open(currentState.url, "_blank", "noopener,noreferrer");
-          if (!win) {
-            kh.ui.toast.showToast("Supplier shortcut was blocked by the browser.", 3600);
-            return;
-          }
-          win.focus?.();
           kh.ui.hud.incrementCounters(3);
+          const win = window.open(currentState.url, "_blank", "noopener,noreferrer");
+          win.focus?.();
         },
       });
       wrap.appendChild(btn);
@@ -3783,13 +3775,9 @@
       btn.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const win = window.open(constants.URLS.SIMPLYPRINT_PANEL, "_blank", "noopener,noreferrer");
-        if (!win) {
-          kh.ui.toast.showToast("SimplyPrint shortcut was blocked by the browser.", 3600);
-          return;
-        }
-        win.focus?.();
         kh.ui.hud.incrementCounters(3);
+        const win = window.open(constants.URLS.SIMPLYPRINT_PANEL, "_blank", "noopener,noreferrer");
+        win.focus?.();
       }, { capture: true });
     }
 

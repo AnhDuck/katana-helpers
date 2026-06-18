@@ -46,13 +46,9 @@
       btn.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const win = window.open(constants.URLS.SIMPLYPRINT_PANEL, "_blank", "noopener,noreferrer");
-        if (!win) {
-          kh.ui.toast.showToast("SimplyPrint shortcut was blocked by the browser.", 3600);
-          return;
-        }
-        win.focus?.();
         kh.ui.hud.incrementCounters(3);
+        const win = window.open(constants.URLS.SIMPLYPRINT_PANEL, "_blank", "noopener,noreferrer");
+        win.focus?.();
       }, { capture: true });
     }
 

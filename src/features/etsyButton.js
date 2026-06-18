@@ -59,13 +59,9 @@
         setTimeout(() => btn.removeAttribute("data-kh-clicked"), 220);
         const orderId = getEtsyOrderIdFromHeader();
         const url = orderId ? `${constants.URLS.ETSY_ORDER}?order_id=${orderId}` : constants.URLS.ETSY_ORDER;
-        const win = window.open(url, "_blank", "noopener,noreferrer");
-        if (!win) {
-          kh.ui.toast.showToast("Etsy shortcut was blocked by the browser.", 3600);
-          return;
-        }
-        win.focus?.();
         kh.ui.hud.incrementCounters(3);
+        const win = window.open(url, "_blank", "noopener,noreferrer");
+        win.focus?.();
       },
     });
 
