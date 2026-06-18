@@ -292,7 +292,12 @@
             });
             return;
           }
-          window.open(currentState.url, "_blank", "noopener,noreferrer");
+          const win = window.open(currentState.url, "_blank", "noopener,noreferrer");
+          if (!win) {
+            kh.ui.toast.showToast("Supplier shortcut was blocked by the browser.", 3600);
+            return;
+          }
+          win.focus?.();
           kh.ui.hud.incrementCounters(3);
         },
       });

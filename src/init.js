@@ -17,6 +17,7 @@
     kh.features.statusHelper.ensureEntityStatusHelper();
     kh.features.doneAndReturn.ensureMoDoneReturnButton();
     kh.features.moQuantityAutofill.ensureMoQuantityAutofill();
+    kh.features.soShippingAutofill.ensureSoShippingAutofill();
     kh.features.soEx.ensureSoExButtons();
     kh.features.etsyButton.ensureEtsyOrderButton();
     kh.features.poSupplierShortcut.ensureSupplierShortcutButton();

@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const version = "2.13.0";
+const version = "2.14.1";
 const devBootstrapVersion = "2.9.0-dev.1";
 const devOrigin = process.env.KATANA_HELPERS_DEV_ORIGIN || "http://127.0.0.1:5174";
 
@@ -19,6 +19,7 @@ const sourceFiles = [
   "src/features/createPo.js",
   "src/features/doneAndReturn.js",
   "src/features/moQuantityAutofill.js",
+  "src/features/soShippingAutofill.js",
   "src/features/ultraEx.js",
   "src/features/soEx.js",
   "src/features/etsyButton.js",

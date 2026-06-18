@@ -18,7 +18,7 @@
 
       const btn = utils.createButton({
         id: constants.IDS.BTN_MO_DONE_RETURN,
-        text: "Done & ↩︎",
+        text: "Done & Return",
         title: "Mark Done, then return to the previous page.",
         onClick: async (event) => {
           event.preventDefault();
@@ -29,16 +29,16 @@
           btn.disabled = true;
 
           try {
-            kh.ui.toast.showToast("Done & ↩︎: marking Done…");
+            kh.ui.toast.showToast("Done & Return: marking Done...");
             const ok = await kh.features.statusHelper.runMoSetDoneFlow();
             if (!ok) {
-              kh.ui.toast.showToast("Couldn't set Done — not returning.");
+              kh.ui.toast.showToast("Couldn't set Done - not returning.");
               return;
             }
 
-            kh.ui.hud.incrementCounters(2);
             if (history.length > 1) {
-              kh.ui.toast.showToast("Done & ↩︎: returning to previous page");
+              kh.ui.hud.incrementCounters(2);
+              kh.ui.toast.showToast("Done & Return: returning to previous page");
               history.back();
               return;
             }
@@ -46,12 +46,14 @@
             const storedUrl = storage.getStoredReturnUrl();
             const normalizedStored = storage.normalizeReturnUrl(storedUrl);
             if (normalizedStored && !storage.isSameUrl(normalizedStored, window.location.href)) {
-              kh.ui.toast.showToast("Done & ↩︎: returning to previous page");
+              kh.ui.hud.incrementCounters(2);
+              kh.ui.toast.showToast("Done & Return: returning to previous page");
               window.location.href = normalizedStored;
               return;
             }
 
-            kh.ui.toast.showToast("No previous page found — stayed on this MO.");
+            kh.ui.hud.incrementCounters(1);
+            kh.ui.toast.showToast("No previous page found - stayed on this MO.");
           } finally {
             btn.setAttribute("data-kh-running", "0");
             btn.disabled = false;

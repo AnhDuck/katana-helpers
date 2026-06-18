@@ -3,15 +3,15 @@
   const { constants, utils } = kh;
 
   const runCreatePoFlow = async () => {
-    if (window.location.pathname.startsWith("/purchaseorder")) return;
+    if (window.location.pathname.startsWith("/purchaseorder")) return false;
 
     const createBtn = document.querySelector(constants.SELECTORS.CREATE_BTN);
-    if (!createBtn) return;
+    if (!createBtn) return false;
 
     let poItem = document.querySelector(constants.SELECTORS.PO_ITEM);
     if (poItem) {
       utils.dispatchRealClick(poItem);
-      return;
+      return true;
     }
 
     poItem = await kh.features.statusHelper.openMenuAndSelect({
@@ -19,7 +19,7 @@
       itemSelector: constants.SELECTORS.PO_ITEM,
       timeoutMs: 1500,
     });
-    if (!poItem) return;
+    return !!poItem;
   };
 
   const ensureCreatePoButton = () => {
@@ -39,8 +39,8 @@
       onClick: async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        kh.ui.hud.incrementCounters(1);
-        await runCreatePoFlow();
+        const ok = await runCreatePoFlow();
+        if (ok) kh.ui.hud.incrementCounters(1);
       },
     });
 

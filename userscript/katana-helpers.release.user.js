@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Katana Helpers
 // @namespace    https://factory.katanamrp.com/
-// @version      2.13.0
+// @version      2.14.1
 // @description  Workflow helpers for Katana MRP.
 // @match        https://factory.katanamrp.com/*
 // @updateURL    https://raw.githubusercontent.com/AnhDuck/katana-helpers/main/userscript/katana-helpers.release.user.js
@@ -16,7 +16,7 @@
   const kh = window.KatanaHelpers = window.KatanaHelpers || {};
 
   kh.constants = {
-    version: "2.13.0",
+    version: "2.14.1",
     DEBUG: false,
     KEYS: {
       TOTAL: "kh_clicks_total",
@@ -26,12 +26,16 @@
       SUPPLIER_BUTTONS: "kh_supplier_buttons",
       SO_INGREDIENTS_PREVIEW_ENABLED: "kh_so_ingredients_preview_enabled",
       MO_QTY_AUTOFILL_ENABLED: "kh_mo_qty_autofill_enabled",
+      SO_SHIPPING_AUTOFILL_ENABLED: "kh_so_shipping_autofill_enabled",
     },
     IDS: {
       STYLE: "kh-style",
       HUD: "kh-hud",
       HUD_SO_INGREDIENTS_TOGGLE: "kh-so-ingredients-toggle",
       HUD_MO_QTY_AUTOFILL_TOGGLE: "kh-mo-qty-autofill-toggle",
+      HUD_MENU_BUTTON: "kh-hud-menu-button",
+      HUD_MENU: "kh-hud-menu",
+      HUD_SO_SHIPPING_AUTOFILL_TOGGLE: "kh-so-shipping-autofill-toggle",
       MO_TIMER: "kh-mo-timer",
       TOAST: "kh-toast",
       BTN_CREATE_MO: "kh-create-mo-btn",
@@ -91,6 +95,9 @@
       MO_PRODUCT_INPUT: 'input[data-testid="katanaAutocompleteInput"]',
       MO_PLANNED_QTY_INPUT: 'input[data-testid="mo-planned-quantity"]',
       MO_HEADER_NAME: '[data-testid="headerNameMANUFACTURINGORDER"]',
+      SO_CUSTOMER_REFERENCE: '[data-testid="soCustomerReference"] input, input[placeholder="Reference number"]',
+      SO_SHIPPING_GRID: '[data-testid="additionalCostsGrid"], #additionalCostsGrid',
+      SO_SHIPPING_COST_CELL: '[data-testid="additionalCostsGrid"] [role="gridcell"][col-id="totalPrice"], #additionalCostsGrid [role="gridcell"][col-id="totalPrice"]',
     },
     GRID: {
       INGREDIENTS_ID: "#ingredients-grid",
@@ -118,6 +125,8 @@
       MO_QTY_AUTOFILL_POLL_MS: 180,
       MO_QTY_AUTOFILL_SETTLE_MS: 650,
       MO_QTY_AUTOFILL_HEADER_WAIT_MS: 2400,
+      SO_SHIPPING_AUTOFILL_POLL_MS: 350,
+      SO_SHIPPING_AUTOFILL_SETTLE_MS: 700,
     },
   };
 })();
@@ -273,21 +282,34 @@
   };
 
   const HAS_STORAGE = storageAvailable();
-  let mem = { total: 0, byDate: {}, supplierButtons: {}, soIngredientsPreviewEnabled: true, moQtyAutofillEnabled: true };
+  let mem = {
+    total: 0,
+    byDate: {},
+    supplierButtons: {},
+    soIngredientsPreviewEnabled: true,
+    moQtyAutofillEnabled: true,
+    soShippingAutofillEnabled: true,
+  };
+
+  const normalizeCount = (value) => {
+    const parsed = typeof value === "number" ? value : parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+    return Math.floor(parsed);
+  };
 
   const readTotal = () => {
-    if (!HAS_STORAGE) return mem.total;
+    if (!HAS_STORAGE) return normalizeCount(mem.total);
     const raw = localStorage.getItem(constants.KEYS.TOTAL);
-    const parsed = raw == null ? 0 : parseInt(raw, 10);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return normalizeCount(raw);
   };
 
   const writeTotal = (value) => {
+    const next = normalizeCount(value);
     if (!HAS_STORAGE) {
-      mem.total = value;
+      mem.total = next;
       return;
     }
-    localStorage.setItem(constants.KEYS.TOTAL, String(value));
+    localStorage.setItem(constants.KEYS.TOTAL, String(next));
   };
 
   const readByDateMap = () => {
@@ -298,16 +320,20 @@
   };
 
   const writeByDateMap = (map) => {
+    const normalized = {};
+    Object.entries(map || {}).forEach(([key, value]) => {
+      const count = normalizeCount(value);
+      if (count > 0) normalized[key] = count;
+    });
     if (!HAS_STORAGE) {
-      mem.byDate = map;
+      mem.byDate = normalized;
       return;
     }
-    localStorage.setItem(constants.KEYS.BY_DATE, JSON.stringify(map));
+    localStorage.setItem(constants.KEYS.BY_DATE, JSON.stringify(normalized));
   };
 
   const getTodayCount = (map, ymd) => {
-    const value = map?.[ymd];
-    return Number.isFinite(value) ? value : 0;
+    return normalizeCount(map?.[ymd]);
   };
 
   const normalizeSupplierName = (name) => utils.normText(name || "");
@@ -355,6 +381,21 @@
       return;
     }
     localStorage.setItem(constants.KEYS.MO_QTY_AUTOFILL_ENABLED, next);
+  };
+
+  const readSoShippingAutofillEnabled = () => {
+    if (!HAS_STORAGE) return mem.soShippingAutofillEnabled;
+    const raw = localStorage.getItem(constants.KEYS.SO_SHIPPING_AUTOFILL_ENABLED);
+    return raw == null ? true : raw === "1";
+  };
+
+  const writeSoShippingAutofillEnabled = (enabled) => {
+    const next = enabled ? "1" : "0";
+    if (!HAS_STORAGE) {
+      mem.soShippingAutofillEnabled = enabled;
+      return;
+    }
+    localStorage.setItem(constants.KEYS.SO_SHIPPING_AUTOFILL_ENABLED, next);
   };
 
   const upsertSupplierButton = (supplierName, data) => {
@@ -448,6 +489,8 @@
     writeSoIngredientsPreviewEnabled,
     readMoQtyAutofillEnabled,
     writeMoQtyAutofillEnabled,
+    readSoShippingAutofillEnabled,
+    writeSoShippingAutofillEnabled,
     upsertSupplierButton,
     normalizeReturnUrl,
     isSameUrl,
@@ -893,17 +936,36 @@
       }
       #${constants.IDS.HUD} .kh-hud-text { pointer-events: none; }
       #${constants.IDS.HUD} .kh-hud-total { pointer-events: auto; }
+      #${constants.IDS.HUD} .kh-hud-menu {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 8px);
+        display: none;
+        min-width: 210px;
+        padding: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.96);
+        color: rgba(255,255,255,0.95);
+        box-shadow: 0 10px 28px rgba(0,0,0,0.32);
+      }
+      #${constants.IDS.HUD}[data-menu-open="1"] .kh-hud-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
       #${constants.IDS.HUD} .kh-hud-toggle {
         pointer-events: auto;
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        gap: 4px;
-        margin-right: 8px;
+        gap: 7px;
+        margin-right: 0;
         color: rgba(255,255,255,0.92);
         font: inherit;
         font-size: 12px;
         user-select: none;
         cursor: pointer;
+        white-space: nowrap;
       }
       #${constants.IDS.HUD} .kh-hud-toggle input {
         margin: 0;
@@ -935,6 +997,14 @@
       #${constants.IDS.HUD} button:hover {
         border-color: rgba(148, 163, 184, 0.85);
         background: rgba(148, 163, 184, 0.3);
+      }
+      #${constants.IDS.HUD} .kh-hud-menu button {
+        width: 100%;
+        margin-right: 0;
+        text-align: left;
+      }
+      #${constants.IDS.HUD} .kh-hud-menu-button {
+        font-weight: 700;
       }
 
       #${constants.IDS.TOAST} {
@@ -1027,19 +1097,39 @@
     const { el: hud, created } = utils.ensureElement(constants.IDS.HUD);
     if (created) {
       hud.innerHTML = `
-        <button id="kh-reset" type="button" title="Reset total + today">Reset</button>
-        <label class="kh-hud-toggle" title="Show missing ingredients beside single-click EX dialogs">
-          <input id="${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}" type="checkbox">
-          <span>Ingredient preview</span>
-        </label>
-        <label class="kh-hud-toggle" title="Auto-fill planned quantity on manufacturing orders from product labels like 15pcs-STD or 28 pcs-STD">
-          <input id="${constants.IDS.HUD_MO_QTY_AUTOFILL_TOGGLE}" type="checkbox">
-          <span>MO qty autofill</span>
-        </label>
+        <button id="${constants.IDS.HUD_MENU_BUTTON}" class="kh-hud-menu-button" type="button" title="Katana Helpers menu" aria-haspopup="true" aria-expanded="false">Helpers</button>
+        <div id="${constants.IDS.HUD_MENU}" class="kh-hud-menu" role="menu" aria-label="Katana Helpers menu">
+          <button id="kh-reset" type="button" role="menuitem" title="Reset total + today">Reset clicks</button>
+          <label class="kh-hud-toggle" title="Show missing ingredients beside single-click EX dialogs">
+            <input id="${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}" type="checkbox">
+            <span>Ingredient preview</span>
+          </label>
+          <label class="kh-hud-toggle" title="Auto-fill planned quantity on manufacturing orders from product labels like 15pcs-STD or 28 pcs-STD">
+            <input id="${constants.IDS.HUD_MO_QTY_AUTOFILL_TOGGLE}" type="checkbox">
+            <span>MO qty autofill</span>
+          </label>
+          <label class="kh-hud-toggle" title="Auto-fill the sales order shipping fee from customer reference text like SHIPPING COST: 3.99">
+            <input id="${constants.IDS.HUD_SO_SHIPPING_AUTOFILL_TOGGLE}" type="checkbox">
+            <span>Shipping autofill</span>
+          </label>
+        </div>
         <span class="kh-hud-text">
           <span class="kh-hud-total" title="Start date: January 3rd, 2026">Total clicks saved: <strong id="kh-total">0</strong></span> | Clicks saved today: <strong id="kh-today">0</strong>
         </span>
       `;
+
+      const closeMenu = () => {
+        hud.dataset.menuOpen = "0";
+        hud.querySelector(`#${constants.IDS.HUD_MENU_BUTTON}`)?.setAttribute("aria-expanded", "false");
+      };
+
+      hud.querySelector(`#${constants.IDS.HUD_MENU_BUTTON}`)?.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const open = hud.dataset.menuOpen === "1";
+        hud.dataset.menuOpen = open ? "0" : "1";
+        event.currentTarget.setAttribute("aria-expanded", open ? "false" : "true");
+      }, { capture: true });
 
       hud.querySelector("#kh-reset")?.addEventListener("click", (event) => {
         event.preventDefault();
@@ -1047,6 +1137,7 @@
         storage.writeTotal(0);
         storage.writeByDateMap({});
         updateHud();
+        closeMenu();
       }, { capture: true });
 
       hud.querySelector(`#${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}`)?.addEventListener("change", (event) => {
@@ -1057,6 +1148,19 @@
       hud.querySelector(`#${constants.IDS.HUD_MO_QTY_AUTOFILL_TOGGLE}`)?.addEventListener("change", (event) => {
         storage.writeMoQtyAutofillEnabled(event.target.checked);
         kh.features?.moQuantityAutofill?.handleSettingChange?.();
+      }, { capture: true });
+
+      hud.querySelector(`#${constants.IDS.HUD_SO_SHIPPING_AUTOFILL_TOGGLE}`)?.addEventListener("change", (event) => {
+        storage.writeSoShippingAutofillEnabled(event.target.checked);
+        kh.features?.soShippingAutofill?.handleSettingChange?.();
+      }, { capture: true });
+
+      document.addEventListener("click", (event) => {
+        if (!hud.contains(event.target)) closeMenu();
+      }, { capture: true });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeMenu();
       }, { capture: true });
     }
 
@@ -1071,6 +1175,7 @@
     const todayEl = hud.querySelector("#kh-today");
     const previewToggle = hud.querySelector(`#${constants.IDS.HUD_SO_INGREDIENTS_TOGGLE}`);
     const moQtyAutofillToggle = hud.querySelector(`#${constants.IDS.HUD_MO_QTY_AUTOFILL_TOGGLE}`);
+    const soShippingAutofillToggle = hud.querySelector(`#${constants.IDS.HUD_SO_SHIPPING_AUTOFILL_TOGGLE}`);
 
     const total = storage.readTotal();
     const ymd = utils.getPacificYMD();
@@ -1081,16 +1186,20 @@
     if (todayEl) todayEl.textContent = String(today);
     if (previewToggle) previewToggle.checked = storage.readSoIngredientsPreviewEnabled();
     if (moQtyAutofillToggle) moQtyAutofillToggle.checked = storage.readMoQtyAutofillEnabled();
+    if (soShippingAutofillToggle) soShippingAutofillToggle.checked = storage.readSoShippingAutofillEnabled();
   };
 
   const incrementCounters = (delta = 1) => {
+    const count = Math.floor(Number(delta));
+    if (!Number.isFinite(count) || count <= 0) return;
+
     const ymd = utils.getPacificYMD();
 
-    const total = storage.readTotal() + delta;
+    const total = storage.readTotal() + count;
     storage.writeTotal(total);
 
     const map = storage.readByDateMap();
-    map[ymd] = storage.getTodayCount(map, ymd) + delta;
+    map[ymd] = storage.getTodayCount(map, ymd) + count;
     storage.writeByDateMap(map);
 
     updateHud();
@@ -1730,15 +1839,15 @@
   const { constants, utils } = kh;
 
   const runCreateMoFlow = async () => {
-    if (window.location.pathname.startsWith("/add-manufacturingorder")) return;
+    if (window.location.pathname.startsWith("/add-manufacturingorder")) return false;
 
     const createBtn = document.querySelector(constants.SELECTORS.CREATE_BTN);
-    if (!createBtn) return;
+    if (!createBtn) return false;
 
     let moItem = document.querySelector(constants.SELECTORS.MO_ITEM);
     if (moItem) {
       utils.dispatchRealClick(moItem);
-      return;
+      return true;
     }
 
     moItem = await kh.features.statusHelper.openMenuAndSelect({
@@ -1746,7 +1855,7 @@
       itemSelector: constants.SELECTORS.MO_ITEM,
       timeoutMs: 1500,
     });
-    if (!moItem) return;
+    return !!moItem;
   };
 
   const ensureCreateMoButton = () => {
@@ -1766,8 +1875,8 @@
       onClick: async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        kh.ui.hud.incrementCounters(1);
-        await runCreateMoFlow();
+        const ok = await runCreateMoFlow();
+        if (ok) kh.ui.hud.incrementCounters(1);
       },
     });
 
@@ -1785,15 +1894,15 @@
   const { constants, utils } = kh;
 
   const runCreatePoFlow = async () => {
-    if (window.location.pathname.startsWith("/purchaseorder")) return;
+    if (window.location.pathname.startsWith("/purchaseorder")) return false;
 
     const createBtn = document.querySelector(constants.SELECTORS.CREATE_BTN);
-    if (!createBtn) return;
+    if (!createBtn) return false;
 
     let poItem = document.querySelector(constants.SELECTORS.PO_ITEM);
     if (poItem) {
       utils.dispatchRealClick(poItem);
-      return;
+      return true;
     }
 
     poItem = await kh.features.statusHelper.openMenuAndSelect({
@@ -1801,7 +1910,7 @@
       itemSelector: constants.SELECTORS.PO_ITEM,
       timeoutMs: 1500,
     });
-    if (!poItem) return;
+    return !!poItem;
   };
 
   const ensureCreatePoButton = () => {
@@ -1821,8 +1930,8 @@
       onClick: async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        kh.ui.hud.incrementCounters(1);
-        await runCreatePoFlow();
+        const ok = await runCreatePoFlow();
+        if (ok) kh.ui.hud.incrementCounters(1);
       },
     });
 
@@ -1860,7 +1969,7 @@
 
       const btn = utils.createButton({
         id: constants.IDS.BTN_MO_DONE_RETURN,
-        text: "Done & ↩︎",
+        text: "Done & Return",
         title: "Mark Done, then return to the previous page.",
         onClick: async (event) => {
           event.preventDefault();
@@ -1871,16 +1980,16 @@
           btn.disabled = true;
 
           try {
-            kh.ui.toast.showToast("Done & ↩︎: marking Done…");
+            kh.ui.toast.showToast("Done & Return: marking Done...");
             const ok = await kh.features.statusHelper.runMoSetDoneFlow();
             if (!ok) {
-              kh.ui.toast.showToast("Couldn't set Done — not returning.");
+              kh.ui.toast.showToast("Couldn't set Done - not returning.");
               return;
             }
 
-            kh.ui.hud.incrementCounters(2);
             if (history.length > 1) {
-              kh.ui.toast.showToast("Done & ↩︎: returning to previous page");
+              kh.ui.hud.incrementCounters(2);
+              kh.ui.toast.showToast("Done & Return: returning to previous page");
               history.back();
               return;
             }
@@ -1888,12 +1997,14 @@
             const storedUrl = storage.getStoredReturnUrl();
             const normalizedStored = storage.normalizeReturnUrl(storedUrl);
             if (normalizedStored && !storage.isSameUrl(normalizedStored, window.location.href)) {
-              kh.ui.toast.showToast("Done & ↩︎: returning to previous page");
+              kh.ui.hud.incrementCounters(2);
+              kh.ui.toast.showToast("Done & Return: returning to previous page");
               window.location.href = normalizedStored;
               return;
             }
 
-            kh.ui.toast.showToast("No previous page found — stayed on this MO.");
+            kh.ui.hud.incrementCounters(1);
+            kh.ui.toast.showToast("No previous page found - stayed on this MO.");
           } finally {
             btn.setAttribute("data-kh-running", "0");
             btn.disabled = false;
@@ -2100,6 +2211,149 @@
     ensureMoQuantityAutofill,
     handleSettingChange,
     extractBatchQty,
+  };
+})();
+
+
+/* src/features/soShippingAutofill.js */
+(() => {
+  const kh = window.KatanaHelpers = window.KatanaHelpers || {};
+  const { constants, storage, utils } = kh;
+
+  const state = {
+    intervalId: 0,
+    lastReference: "",
+    lastSeenAt: 0,
+    lastAppliedAmount: "",
+    lastAppliedReference: "",
+    isEditing: false,
+  };
+
+  const isSoPage = () => window.location.pathname.startsWith("/salesorder");
+
+  const normalizeReference = (raw) => String(raw || "").replace(/\s+/g, " ").trim();
+
+  const extractShippingCost = (rawReference) => {
+    const reference = normalizeReference(rawReference);
+    if (!reference) return null;
+
+    const match = reference.match(/\bshipping\s*(?:cost|fee|charge)\b\s*[:#=-]?\s*\$?\s*([0-9]+(?:[.,][0-9]{1,2})?)/i);
+    if (!match) return null;
+
+    const amount = Number.parseFloat(match[1].replace(",", "."));
+    if (!Number.isFinite(amount) || amount < 0) return null;
+    return amount.toFixed(2).replace(/\.00$/, "");
+  };
+
+  const parseMoneyValue = (text) => {
+    const match = String(text || "").replace(/\u00a0/g, " ").match(/-?[0-9]+(?:[.,][0-9]+)?/);
+    if (!match) return null;
+    const value = Number.parseFloat(match[0].replace(",", "."));
+    return Number.isFinite(value) ? value : null;
+  };
+
+  const getReferenceInput = () => document.querySelector(constants.SELECTORS.SO_CUSTOMER_REFERENCE);
+  const getShippingCostCell = () => document.querySelector(constants.SELECTORS.SO_SHIPPING_COST_CELL);
+
+  const shouldApplyToCell = (cell, amount, reference) => {
+    const current = parseMoneyValue(cell?.textContent || "");
+    const next = Number.parseFloat(amount);
+    if (!Number.isFinite(next)) return false;
+    if (current == null || current === 0) return true;
+    if (Math.abs(current - next) < 0.005) return false;
+    return state.lastAppliedReference && state.lastAppliedReference !== reference && state.lastAppliedAmount && Math.abs(current - Number.parseFloat(state.lastAppliedAmount)) < 0.005;
+  };
+
+  const findEditorInput = () => {
+    const grid = document.querySelector(constants.SELECTORS.SO_SHIPPING_GRID);
+    const candidates = [
+      ...(grid ? Array.from(grid.querySelectorAll('input:not([type="checkbox"]), textarea')) : []),
+      ...Array.from(document.querySelectorAll('.ag-popup-editor input:not([type="checkbox"]), .ag-cell-inline-editing input:not([type="checkbox"])')),
+    ];
+    return candidates.find((input) => input.offsetParent !== null && !input.disabled && !input.readOnly) || null;
+  };
+
+  const applyShippingCost = async (cell, amount, reference) => {
+    if (state.isEditing) return;
+    state.isEditing = true;
+    try {
+      utils.dispatchRealClick(cell);
+      cell.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window }));
+
+      const input = await utils.waitForCondition(findEditorInput, 1200, 40);
+      utils.setReactInputValue(input, amount);
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
+      input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", code: "Enter", bubbles: true, cancelable: true }));
+      input.blur();
+
+      state.lastAppliedAmount = amount;
+      state.lastAppliedReference = reference;
+      cell.dataset.khShippingAutofillValue = amount;
+      kh.ui.toast.showToast(`Shipping fee filled: ${amount}`, 2200);
+    } catch (error) {
+      utils.log("Shipping autofill failed", error);
+    } finally {
+      state.isEditing = false;
+    }
+  };
+
+  const resetState = () => {
+    state.lastReference = "";
+    state.lastSeenAt = 0;
+    state.lastAppliedAmount = "";
+    state.lastAppliedReference = "";
+    state.isEditing = false;
+  };
+
+  const tick = () => {
+    if (!isSoPage()) {
+      resetState();
+      return;
+    }
+    if (!storage.readSoShippingAutofillEnabled()) return;
+    if (state.isEditing) return;
+
+    const referenceInput = getReferenceInput();
+    const costCell = getShippingCostCell();
+    if (!referenceInput || !costCell) return;
+    if (document.activeElement === referenceInput) return;
+
+    const reference = normalizeReference(referenceInput.value);
+    const now = Date.now();
+    if (reference !== state.lastReference) {
+      state.lastReference = reference;
+      state.lastSeenAt = now;
+    }
+
+    if (now - state.lastSeenAt < constants.CONFIG.SO_SHIPPING_AUTOFILL_SETTLE_MS) return;
+
+    const amount = extractShippingCost(reference);
+    if (!amount) return;
+    if (!shouldApplyToCell(costCell, amount, reference)) return;
+
+    applyShippingCost(costCell, amount, reference);
+  };
+
+  const start = () => {
+    if (state.intervalId) return;
+    state.intervalId = window.setInterval(tick, constants.CONFIG.SO_SHIPPING_AUTOFILL_POLL_MS);
+  };
+
+  const handleSettingChange = () => {
+    if (!storage.readSoShippingAutofillEnabled()) resetState();
+    else state.lastSeenAt = 0;
+  };
+
+  const ensureSoShippingAutofill = () => {
+    start();
+    tick();
+  };
+
+  kh.features = kh.features || {};
+  kh.features.soShippingAutofill = {
+    ensureSoShippingAutofill,
+    handleSettingChange,
+    extractShippingCost,
   };
 })();
 
@@ -3122,7 +3376,13 @@
         setTimeout(() => btn.removeAttribute("data-kh-clicked"), 220);
         const orderId = getEtsyOrderIdFromHeader();
         const url = orderId ? `${constants.URLS.ETSY_ORDER}?order_id=${orderId}` : constants.URLS.ETSY_ORDER;
-        window.open(url, "_blank", "noopener,noreferrer");
+        const win = window.open(url, "_blank", "noopener,noreferrer");
+        if (!win) {
+          kh.ui.toast.showToast("Etsy shortcut was blocked by the browser.", 3600);
+          return;
+        }
+        win.focus?.();
+        kh.ui.hud.incrementCounters(3);
       },
     });
 
@@ -3429,7 +3689,12 @@
             });
             return;
           }
-          window.open(currentState.url, "_blank", "noopener,noreferrer");
+          const win = window.open(currentState.url, "_blank", "noopener,noreferrer");
+          if (!win) {
+            kh.ui.toast.showToast("Supplier shortcut was blocked by the browser.", 3600);
+            return;
+          }
+          win.focus?.();
           kh.ui.hud.incrementCounters(3);
         },
       });
@@ -3519,7 +3784,11 @@
         event.preventDefault();
         event.stopPropagation();
         const win = window.open(constants.URLS.SIMPLYPRINT_PANEL, "_blank", "noopener,noreferrer");
-        win?.focus();
+        if (!win) {
+          kh.ui.toast.showToast("SimplyPrint shortcut was blocked by the browser.", 3600);
+          return;
+        }
+        win.focus?.();
         kh.ui.hud.incrementCounters(3);
       }, { capture: true });
     }
@@ -3558,6 +3827,7 @@
     kh.features.statusHelper.ensureEntityStatusHelper();
     kh.features.doneAndReturn.ensureMoDoneReturnButton();
     kh.features.moQuantityAutofill.ensureMoQuantityAutofill();
+    kh.features.soShippingAutofill.ensureSoShippingAutofill();
     kh.features.soEx.ensureSoExButtons();
     kh.features.etsyButton.ensureEtsyOrderButton();
     kh.features.poSupplierShortcut.ensureSupplierShortcutButton();

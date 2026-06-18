@@ -157,6 +157,14 @@ in-app browser does not run the installed Tampermonkey script.
     estimated as two saved actions: set Done and return to the sales order.
   - The `Create + Ultra` click itself is not counted as a saved click because it
     replaces the native `Create and view` click the user would otherwise make.
+- Other click-savings counters are success-gated:
+  - Global `Create MO` and `Make PO` count one saved click only after the native
+    menu target is found and clicked.
+  - Manufacturing `Done`, sales `Pack all`, and `Done & Return` count only after
+    the status change succeeds. `Done & Return` counts two when it also triggers
+    a return navigation, and one when it can only mark Done.
+  - External shortcuts (`Etsy`, supplier shortcuts, and `SimplyPrint`) count
+    three saved clicks only when the browser actually opens the new tab/window.
 - Material UI class suffixes are generated and should not be used as stable
   selectors.
 - AG Grid virtualizes rows, so availability scanning must scroll the grid

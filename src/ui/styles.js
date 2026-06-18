@@ -432,17 +432,36 @@
       }
       #${constants.IDS.HUD} .kh-hud-text { pointer-events: none; }
       #${constants.IDS.HUD} .kh-hud-total { pointer-events: auto; }
+      #${constants.IDS.HUD} .kh-hud-menu {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 8px);
+        display: none;
+        min-width: 210px;
+        padding: 8px;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.96);
+        color: rgba(255,255,255,0.95);
+        box-shadow: 0 10px 28px rgba(0,0,0,0.32);
+      }
+      #${constants.IDS.HUD}[data-menu-open="1"] .kh-hud-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
       #${constants.IDS.HUD} .kh-hud-toggle {
         pointer-events: auto;
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        gap: 4px;
-        margin-right: 8px;
+        gap: 7px;
+        margin-right: 0;
         color: rgba(255,255,255,0.92);
         font: inherit;
         font-size: 12px;
         user-select: none;
         cursor: pointer;
+        white-space: nowrap;
       }
       #${constants.IDS.HUD} .kh-hud-toggle input {
         margin: 0;
@@ -474,6 +493,14 @@
       #${constants.IDS.HUD} button:hover {
         border-color: rgba(148, 163, 184, 0.85);
         background: rgba(148, 163, 184, 0.3);
+      }
+      #${constants.IDS.HUD} .kh-hud-menu button {
+        width: 100%;
+        margin-right: 0;
+        text-align: left;
+      }
+      #${constants.IDS.HUD} .kh-hud-menu-button {
+        font-weight: 700;
       }
 
       #${constants.IDS.TOAST} {

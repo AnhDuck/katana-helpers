@@ -14,21 +14,34 @@
   };
 
   const HAS_STORAGE = storageAvailable();
-  let mem = { total: 0, byDate: {}, supplierButtons: {}, soIngredientsPreviewEnabled: true, moQtyAutofillEnabled: true };
+  let mem = {
+    total: 0,
+    byDate: {},
+    supplierButtons: {},
+    soIngredientsPreviewEnabled: true,
+    moQtyAutofillEnabled: true,
+    soShippingAutofillEnabled: true,
+  };
+
+  const normalizeCount = (value) => {
+    const parsed = typeof value === "number" ? value : parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+    return Math.floor(parsed);
+  };
 
   const readTotal = () => {
-    if (!HAS_STORAGE) return mem.total;
+    if (!HAS_STORAGE) return normalizeCount(mem.total);
     const raw = localStorage.getItem(constants.KEYS.TOTAL);
-    const parsed = raw == null ? 0 : parseInt(raw, 10);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return normalizeCount(raw);
   };
 
   const writeTotal = (value) => {
+    const next = normalizeCount(value);
     if (!HAS_STORAGE) {
-      mem.total = value;
+      mem.total = next;
       return;
     }
-    localStorage.setItem(constants.KEYS.TOTAL, String(value));
+    localStorage.setItem(constants.KEYS.TOTAL, String(next));
   };
 
   const readByDateMap = () => {
@@ -39,16 +52,20 @@
   };
 
   const writeByDateMap = (map) => {
+    const normalized = {};
+    Object.entries(map || {}).forEach(([key, value]) => {
+      const count = normalizeCount(value);
+      if (count > 0) normalized[key] = count;
+    });
     if (!HAS_STORAGE) {
-      mem.byDate = map;
+      mem.byDate = normalized;
       return;
     }
-    localStorage.setItem(constants.KEYS.BY_DATE, JSON.stringify(map));
+    localStorage.setItem(constants.KEYS.BY_DATE, JSON.stringify(normalized));
   };
 
   const getTodayCount = (map, ymd) => {
-    const value = map?.[ymd];
-    return Number.isFinite(value) ? value : 0;
+    return normalizeCount(map?.[ymd]);
   };
 
   const normalizeSupplierName = (name) => utils.normText(name || "");
@@ -96,6 +113,21 @@
       return;
     }
     localStorage.setItem(constants.KEYS.MO_QTY_AUTOFILL_ENABLED, next);
+  };
+
+  const readSoShippingAutofillEnabled = () => {
+    if (!HAS_STORAGE) return mem.soShippingAutofillEnabled;
+    const raw = localStorage.getItem(constants.KEYS.SO_SHIPPING_AUTOFILL_ENABLED);
+    return raw == null ? true : raw === "1";
+  };
+
+  const writeSoShippingAutofillEnabled = (enabled) => {
+    const next = enabled ? "1" : "0";
+    if (!HAS_STORAGE) {
+      mem.soShippingAutofillEnabled = enabled;
+      return;
+    }
+    localStorage.setItem(constants.KEYS.SO_SHIPPING_AUTOFILL_ENABLED, next);
   };
 
   const upsertSupplierButton = (supplierName, data) => {
@@ -189,6 +221,8 @@
     writeSoIngredientsPreviewEnabled,
     readMoQtyAutofillEnabled,
     writeMoQtyAutofillEnabled,
+    readSoShippingAutofillEnabled,
+    writeSoShippingAutofillEnabled,
     upsertSupplierButton,
     normalizeReturnUrl,
     isSameUrl,

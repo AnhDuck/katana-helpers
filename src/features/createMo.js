@@ -3,15 +3,15 @@
   const { constants, utils } = kh;
 
   const runCreateMoFlow = async () => {
-    if (window.location.pathname.startsWith("/add-manufacturingorder")) return;
+    if (window.location.pathname.startsWith("/add-manufacturingorder")) return false;
 
     const createBtn = document.querySelector(constants.SELECTORS.CREATE_BTN);
-    if (!createBtn) return;
+    if (!createBtn) return false;
 
     let moItem = document.querySelector(constants.SELECTORS.MO_ITEM);
     if (moItem) {
       utils.dispatchRealClick(moItem);
-      return;
+      return true;
     }
 
     moItem = await kh.features.statusHelper.openMenuAndSelect({
@@ -19,7 +19,7 @@
       itemSelector: constants.SELECTORS.MO_ITEM,
       timeoutMs: 1500,
     });
-    if (!moItem) return;
+    return !!moItem;
   };
 
   const ensureCreateMoButton = () => {
@@ -39,8 +39,8 @@
       onClick: async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        kh.ui.hud.incrementCounters(1);
-        await runCreateMoFlow();
+        const ok = await runCreateMoFlow();
+        if (ok) kh.ui.hud.incrementCounters(1);
       },
     });
 
